@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>smortrade - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <aside class="sidebar">
+        <div class="sidebar-brand">smortrade</div>
+        <nav class="sidebar-menu">
+            <a href="#" class="menu-item active">Dashboard</a>
+            <a href="#" class="menu-item">Analytics</a>
+            <a href="#" class="menu-item">Stock Search</a>
+            <a href="#" class="menu-item">News Terminal</a>
+            <a href="#" class="menu-item">Settings</a>
+        </nav>
+    </aside>
+
+    <div class="main-container">
+        
+        <header class="topbar">
+            <div class="topbar-search">
+                <input type="text" placeholder="Global system search...">
+            </div>
+            <div class="topbar-actions">
+                <span class="user-profile">User Profile</span>
+                <button class="btn-logout">Logout</button>
+            </div>
+        </header>
+
+        <main class="content-body">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+</body>
+</html>

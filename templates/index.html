@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<section class="metrics-layer">
+    <div class="card metric-card">
+        <h3>Current Asset</h3>
+        <p class="metric-value">${{ "{:,.2f}".format(metrics.current_asset) }}</p>
+        <span class="metric-change positive">+{{ metrics.asset_change_percent }}% vs last session</span>
+    </div>
+    
+    <div class="card metric-card">
+        <h3>Stock Traded (Since Logout)</h3>
+        <p class="metric-value">{{ metrics.auto_trades_since_logout }}</p>
+        <span class="metric-subtext">Automated triggers executed</span>
+    </div>
+    
+    <div class="card metric-card">
+        <h3>Current Stock Holdings</h3>
+        <p class="metric-value">{{ metrics.current_holdings_count }}</p>
+        <span class="metric-subtext">Total distinct open positions</span>
+    </div>
+</section>
+
+<section class="split-layer">
+    <div class="card target-watchlist">
+        <h2>Targeted Watchlist</h2>
+        <div class="watchlist-grid">
+            {% for stock in targeted_stocks %}
+            <div class="watchlist-row">
+                <span class="stock-ticker">{{ stock.ticker }}</span>
+                <span class="stock-price">${{ "{:,.2f}".format(stock.price) }}</span>
+                <span class="stock-change {% if stock.change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if stock.change >= 0 %}+{% endif %}{{ stock.change }}%
+                </span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card news-feed">
+        <h2>Market News Terminal</h2>
+        <div class="news-list">
+            {% for article in market_news %}
+            <div class="news-item">
+                <span class="news-source">{{ article.source }}</span>
+                <p class="news-title">{{ article.title }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="activity-layer">
+    <div class="card ledger-card">
+        <h2>Recent Automated Activity Ledger</h2>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>Ticker</th>
+                    <th>Execution Type</th>
+                    <th>Volume (Shares)</th>
+                    <th>Execution Price</th>
+                    <th>Gross Cost</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in recent_transactions %}
+                <tr>
+                    <td>{{ tx.timestamp }}</td>
+                    <td><strong>{{ tx.ticker }}</strong></td>
+                    <td>
+                        <span class="badge {% if 'BUY' in tx.type %}buy{% elif 'SELL' in tx.type %}sell{% endif %}">
+                            {{ tx.type }}
+                        </span>
+                    </td>
+                    <td>{{ tx.shares }}</td>
+                    <td>${{ "{:,.2f}".format(tx.price) }}</td>
+                    <td>${{ "{:,.2f}".format(tx.total) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% endblock %}

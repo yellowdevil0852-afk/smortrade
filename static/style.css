@@ -1,0 +1,284 @@
+/* Color Palette & Foundations */
+:root {
+    --bg-main: #fcfbfe;
+    --bg-card: #ffffff;
+    --primary-purple: #6366f1;
+    --primary-light: #f1f1fe;
+    --text-dark: #1e1b4b;
+    --text-muted: #6b7280;
+    --border-color: #e2e8f0;
+    --positive-green: #10b981;
+    --negative-red: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-dark);
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Sidebar Navigation Layout */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    padding: 2rem 1.5rem;
+    z-index: 100;
+}
+
+.sidebar-brand {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary-purple);
+    margin-bottom: 3rem;
+    letter-spacing: -0.05em;
+}
+
+.sidebar-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.menu-item {
+    text-decoration: none;
+    color: var(--text-muted);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.menu-item:hover, .menu-item.active {
+    background-color: var(--primary-light);
+    color: var(--primary-purple);
+}
+
+/* App Main Container Layout */
+.main-container {
+    margin-left: 260px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top Utility Navbar Header */
+.topbar {
+    height: 70px;
+    background-color: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.topbar-search input {
+    width: 300px;
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    outline: none;
+    background-color: var(--bg-main);
+}
+
+.topbar-search input:focus {
+    border-color: var(--primary-purple);
+}
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.user-profile {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-logout {
+    padding: 0.4rem 1rem;
+    border: 1px solid var(--primary-purple);
+    background: transparent;
+    color: var(--primary-purple);
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.btn-logout:hover {
+    background-color: var(--primary-purple);
+    color: white;
+}
+
+/* Dashboard Content Grid Body */
+.content-body {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* Standard Base Cards */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.card h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+    color: var(--text-dark);
+}
+
+/* Layer 1: Three Horizontal Cards styling */
+.metrics-layer {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+}
+
+.metric-card h3 {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.metric-change {
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.metric-subtext {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Layer 2: Split Screen Layout columns (Watchlist and News) */
+.split-layer {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 1.5rem;
+}
+
+.watchlist-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.watchlist-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--border-color);
+}
+
+.watchlist-row:last-child {
+    border-bottom: none;
+}
+
+.stock-ticker {
+    font-weight: 600;
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.news-item {
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.news-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.news-source {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--primary-purple);
+    font-weight: 600;
+}
+
+.news-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 0.15rem;
+}
+
+/* Layer 3: Interactive Data Tables */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    color: var(--text-muted);
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.badge {
+    background-color: var(--primary-light);
+    color: var(--primary-purple);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge.buy {
+    background-color: rgba(16, 185, 129, 0.12) !important; 
+    color: var(--positive-green);
+}
+
+.badge.sell {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+    color: var(--negative-red);
+}
+
+/* Color Modifiers */
+.positive { color: var(--positive-green); }
+.negative { color: var(--negative-red); }

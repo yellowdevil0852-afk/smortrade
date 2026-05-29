@@ -26,10 +26,10 @@
         <h2>Targeted Watchlist</h2>
         <div class="watchlist-grid">
             {% for stock in targeted_stocks %}
-            <div class="watchlist-row">
+            <div class="watchlist-row" data-ticker="{{ stock.ticker }}">
                 <span class="stock-ticker">{{ stock.ticker }}</span>
-                <span class="stock-price">${{ "{:,.2f}".format(stock.price) }}</span>
-                <span class="stock-change {% if stock.change >= 0 %}positive{% else %}negative{% endif %}">
+                <span class="stock-price live-price">${{ "{:,.2f}".format(stock.price) }}</span>
+                <span class="stock-change live-change {% if stock.change >= 0 %}positive{% else %}negative{% endif %}">
                     {% if stock.change >= 0 %}+{% endif %}{{ stock.change }}%
                 </span>
             </div>
@@ -83,5 +83,55 @@
         </table>
     </div>
 </section>
+
+<script>
+    function updateLivePrices() {
+        console.log("Attempting to fetch live prices..."); // Let's see if the function even starts
+        
+        fetch('/api/watchlist')
+            .then(response => {
+                // If the server returns a bad status (like 404 or 500), tell us!
+                if (!response.ok) {
+                    throw new Error(`Server returned status code ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log("Raw data received from server:", data); // Check what the data looks like
+                
+                if (data.error) {
+                    console.error("Server-side logic error:", data.error);
+                    return;
+                }
+
+                data.forEach(stock => {
+                    const row = document.querySelector(`.watchlist-row[data-ticker="${stock.ticker}"]`);
+                    if (row) {
+                        const priceEl = row.querySelector('.live-price');
+                        const changeEl = row.querySelector('.live-change');
+
+                        priceEl.textContent = stock.price;
+                        changeEl.textContent = stock.change;
+                        
+                        if (stock.is_positive) {
+                            changeEl.classList.remove('negative');
+                            changeEl.classList.add('positive');
+                        } else {
+                            changeEl.classList.remove('positive');
+                            changeEl.classList.add('negative');
+                        }
+                    }
+                });
+                console.log("Watchlist auto-updated smoothly.");
+            })
+            .catch(err => console.error("Fetch framework broken:", err));
+    }
+
+    // KICKSTART IMMEDIATELY ON PAGE LOAD SO WE DON'T HAVE TO WAIT
+    updateLivePrices();
+
+    // Keep the 30-second loop going afterward
+    setInterval(updateLivePrices, 30000);
+</script>
 
 {% endblock %}

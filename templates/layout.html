@@ -11,10 +11,10 @@
     <aside class="sidebar">
         <div class="sidebar-brand">smortrade</div>
         <nav class="sidebar-menu">
-            <a href="#" class="menu-item active">Dashboard</a>
+            <a href="/" class="menu-item {% if request.path == '/' %}active{% endif %}">Dashboard</a>
+            <a href="/search" class="menu-item">Stock Search</a>
             <a href="#" class="menu-item">Analytics</a>
-            <a href="#" class="menu-item">Stock Search</a>
-            <a href="#" class="menu-item">News Terminal</a>
+            <a href="#" class="menu-item">News</a>
             <a href="#" class="menu-item">Settings</a>
         </nav>
     </aside>

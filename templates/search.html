@@ -1,0 +1,105 @@
+{% extends "layout.html" %}
+
+{% block title %}
+    Stock Search
+{% endblock %}
+
+{% block content %}
+<div class="search-page-container" style="max-width: 1000px; margin: 20px auto; padding: 0 20px;">
+    
+    <div class="page-header" style="margin-bottom: 24px; text-align: left;">
+        <h1 style="font-size: 24px; font-weight: 600; color: #111111; margin-bottom: 4px;">Market Search Engine</h1>
+        <p style="color: #666666; font-size: 14px; margin: 0;">Look up asset tickers across global exchanges to manage simulator positions.</p>
+    </div>
+
+    <div class="dashboard-card" style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color, #e0e0e0); box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 24px;">
+        <label for="stock-search-input" style="display: block; font-size: 13px; font-weight: 500; color: #444444; margin-bottom: 8px;">Ticker Symbol or Company Name</label>
+        <div class="search-box-container">
+            <input type="text" id="stock-search-input" placeholder="Enter symbol... (e.g. TSLA, NVDA, AAPL)" autocomplete="off">
+            <div id="search-results-dropdown"></div>
+        </div>
+    </div>
+
+    <div id="selected-stock-workspace" class="dashboard-card" style="display: none; background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid var(--border-color, #e0e0e0); text-align: center;">
+        <div style="background: rgba(99, 102, 241, 0.05); color: var(--primary-purple, #6366f1); display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 20px; margin-bottom: 12px;" id="target-display-ticker">
+            ---
+        </div>
+        <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: #111111;">Asset Target Locked</h3>
+        <p style="color: #666666; font-size: 14px; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            Connection established. Ready to launch the automated trade execution and analytical interface modules.
+        </p>
+        <button class="btn" style="background: var(--primary-purple, #6366f1); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; cursor: pointer;">
+            Open Order Book
+        </button>
+    </div>
+
+</div>
+
+<script>
+    const searchInput = document.getElementById('stock-search-input');
+    const resultsDropdown = document.getElementById('search-results-dropdown');
+    const workspacePanel = document.getElementById('selected-stock-workspace');
+    const targetTickerDisplay = document.getElementById('target-display-ticker');
+    let debounceTimer;
+
+    if (searchInput && resultsDropdown) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = searchInput.value.trim();
+
+            if (query.length < 1) {
+                resultsDropdown.innerHTML = '';
+                resultsDropdown.style.display = 'none';
+                return;
+            }
+
+            debounceTimer = setTimeout(() => {
+                fetch(`/api/search?q=${query}`)
+                    .then(res => res.json())
+                    .then(results => {
+                        resultsDropdown.innerHTML = '';
+                        
+                        if (results.length === 0) {
+                            resultsDropdown.innerHTML = '<div class="search-no-results">No stocks found</div>';
+                            resultsDropdown.style.display = 'block';
+                            return;
+                        }
+
+                        results.forEach(item => {
+                            const option = document.createElement('div');
+                            option.className = 'search-result-item';
+                            option.innerHTML = `
+                                <span class="search-result-ticker">${item.ticker}</span>
+                                <span class="search-result-name">${item.name}</span>
+                            `;
+
+                            option.addEventListener('click', () => {
+                                searchInput.value = item.ticker;
+                                resultsDropdown.style.display = 'none';
+                                selectStockForTrading(item.ticker);
+                            });
+
+                            resultsDropdown.appendChild(option);
+                        });
+                        resultsDropdown.style.display = 'block';
+                    })
+                    .catch(err => console.error("Search fetch failed:", err));
+            }, 250);
+        });
+
+        document.addEventListener('click', function(e) {
+            if (e.target !== searchInput && e.target !== resultsDropdown) {
+                resultsDropdown.style.display = 'none';
+            }
+        });
+    }
+
+    function selectStockForTrading(ticker) {
+        console.log(`Stock target locked on isolated page: ${ticker}`);
+        if(workspacePanel && targetTickerDisplay) {
+            targetTickerDisplay.textContent = ticker;
+            workspacePanel.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

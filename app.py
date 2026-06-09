@@ -137,8 +137,79 @@ def index():
 
 @app.route("/search")
 def search_page():
-    """Renders the dedicated standalone stock search and analysis workspace."""
-    return render_template("search.html")
+    """Renders the standalone trading workspace with live tracking blocks."""
+    conn = get_db_connection()
+    
+    # 1. Grab user balance information
+    user = conn.execute("SELECT * FROM users WHERE id = 1").fetchone()
+    
+    # 2. Grab all positions to calculate real-time values
+    holdings_rows = conn.execute("SELECT * FROM holdings WHERE user_id = 1").fetchall()
+    
+    portfolio_holdings = []
+    total_portfolio_value = user['cash']
+
+    if holdings_rows:
+        # Extract tickers to fetch live prices in bulk
+        tickers = [row['ticker'] for row in holdings_rows]
+        try:
+            api_data = yf.Tickers(" ".join(tickers))
+            for row in holdings_rows:
+                ticker = row['ticker']
+                info = api_data.tickers[ticker].info
+                current_price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose') or 0.0
+                
+                position_value = row['shares'] * current_price
+                total_portfolio_value += position_value
+                
+                portfolio_holdings.append({
+                    "ticker": ticker,
+                    "shares": row['shares'],
+                    "avg_price": row['average_price'],
+                    "current_price": round(current_price, 2),
+                    "total_value": round(position_value, 2)
+                })
+        except Exception as e:
+            print(f"Holdings API error: {e}")
+            # Fallback values if offline
+            for row in holdings_rows:
+                portfolio_holdings.append({
+                    "ticker": row['ticker'], "shares": row['shares'], 
+                    "avg_price": row['average_price'], "current_price": row['average_price'], 
+                    "total_value": row['shares'] * row['average_price']
+                })
+
+    # Sort holdings by total value descending and slice the top 4 for the charts
+    top_4_charts = sorted(portfolio_holdings, key=lambda x: x['total_value'], reverse=True)[:4]
+
+    # 3. Dynamic Hot Stocks Stream for Right Sidebar
+    hot_tickers = ["NVDA", "AAPL", "TSLA", "AMD", "MSFT"]
+    hot_stocks = []
+    try:
+        hot_api = yf.Tickers(" ".join(hot_tickers))
+        for ticker in hot_tickers:
+            info = hot_api.tickers[ticker].info
+            price = info.get('regularMarketPrice') or info.get('currentPrice') or 0.0
+            open_p = info.get('regularMarketOpen') or price or 1.0
+            change = ((price - open_p) / open_p) * 100
+            hot_stocks.append({
+                "ticker": ticker,
+                "price": round(price, 2),
+                "change": round(change, 2)
+            })
+    except Exception:
+        hot_stocks = [{"ticker": t, "price": 0.0, "change": 0.0} for t in hot_tickers]
+
+    conn.close()
+
+    return render_template(
+        "search.html",
+        cash=round(user['cash'], 2),
+        total_value=round(total_portfolio_value, 2),
+        holdings=portfolio_holdings,
+        top_charts=top_4_charts,
+        hot_stocks=hot_stocks
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,105 +1,230 @@
 {% extends "layout.html" %}
 
-{% block title %}
-    Stock Search
-{% endblock %}
+{% block title %}Stock Search & Analysis{% endblock %}
 
 {% block content %}
-<div class="search-page-container" style="max-width: 1000px; margin: 20px auto; padding: 0 20px;">
+<div class="search-workspace-grid">
     
-    <div class="page-header" style="margin-bottom: 24px; text-align: left;">
-        <h1 style="font-size: 24px; font-weight: 600; color: #111111; margin-bottom: 4px;">Market Search Engine</h1>
-        <p style="color: #666666; font-size: 14px; margin: 0;">Look up asset tickers across global exchanges to manage simulator positions.</p>
-    </div>
+    <div class="main-workspace-lane">
+        
+        <div class="layer-one-split">
+            
+            <div class="dashboard-card search-engine-card">
+                <h3 class="card-title">Market Search Engine</h3>
+                <p class="card-subtitle">Look up asset tickers across global exchanges.</p>
+                
+                <div class="search-box-container">
+                    <input type="text" id="stock-search-input" class="styled-search-input" placeholder="Type symbol... (e.g. AAPL, NVDA)" autocomplete="off" aria-label="Search stocks">
+                    <div id="search-results-dropdown"></div>
 
-    <div class="dashboard-card" style="background: #ffffff; padding: 24px; border-radius: 12px; border: 1px solid var(--border-color, #e0e0e0); box-shadow: 0 1px 3px rgba(0,0,0,0.02); margin-bottom: 24px;">
-        <label for="stock-search-input" style="display: block; font-size: 13px; font-weight: 500; color: #444444; margin-bottom: 8px;">Ticker Symbol or Company Name</label>
-        <div class="search-box-container">
-            <input type="text" id="stock-search-input" placeholder="Enter symbol... (e.g. TSLA, NVDA, AAPL)" autocomplete="off">
-            <div id="search-results-dropdown"></div>
+                    <div class="recent-searches" aria-label="Recent searches">
+                        <button type="button" class="recent-btn recent-search-btn" data-ticker="AAPL">AAPL</button>
+                        <button type="button" class="recent-btn recent-search-btn" data-ticker="NVDA">NVDA</button>
+                        <button type="button" class="recent-btn recent-search-btn" data-ticker="TSLA">TSLA</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-card assets-card">
+                <div class="assets-header">
+                    <h3 class="card-title-alt">Current Capital Assets</h3>
+                    <div class="assets-metrics-group">
+                        <div class="metric-block">
+                            <span class="metric-label">Net Portfolio Value</span>
+                            <strong class="metric-value-dark">${{ "{:,.2f}".format(total_value) }}</strong>
+                        </div>
+                        <div class="metric-block">
+                            <span class="metric-label">Available Cash</span>
+                            <strong class="metric-value-purple">${{ "{:,.2f}".format(cash) }}</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mini-positions-list">
+                    {% if holdings %}
+                        {% for item in holdings %}
+                        <div class="position-row">
+                            <span class="position-ticker">{{ item.ticker }} <span class="position-qty">x{{ item.shares }}</span></span>
+                            <span class="position-val">${{ "{:,.2f}".format(item.total_value) }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="empty-positions-text">No active portfolio positions held currently.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="layer-two-charts">
+            <h3 class="section-heading">Top Valued Holdings Market Trend Analysis</h3>
+            
+            <div class="charts-grid">
+                {% if top_charts %}
+                    {% for chart in top_charts %}
+                    <div class="dashboard-card chart-card">
+                        <div class="chart-card-header">
+                            <strong class="chart-title">{{ chart.ticker }} Analytics</strong>
+                            <span class="chart-value-label">Holding Val: ${{ "{:,.2f}".format(chart.total_value) }}</span>
+                        </div>
+                        <div class="chart-canvas-wrapper">
+                            <canvas id="chart-{{ chart.ticker }}"></canvas>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="dashboard-card empty-charts-card">
+                        Purchase core equities via search to populate the dynamic bottom 4 position tracking charts.
+                    </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 
-    <div id="selected-stock-workspace" class="dashboard-card" style="display: none; background: #ffffff; padding: 32px; border-radius: 12px; border: 1px solid var(--border-color, #e0e0e0); text-align: center;">
-        <div style="background: rgba(99, 102, 241, 0.05); color: var(--primary-purple, #6366f1); display: inline-block; padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 20px; margin-bottom: 12px;" id="target-display-ticker">
-            ---
+    <aside class="hot-stocks-sidebar">
+        <h3 class="sidebar-heading">🔥 Hot Indicators</h3>
+        <p class="sidebar-subheading">High volume algorithmic movers today.</p>
+        
+        <div class="hot-list-wrapper">
+            {% for hot in hot_stocks %}
+            <div class="hot-stock-row">
+                <div class="hot-stock-info">
+                    <strong class="hot-ticker">{{ hot.ticker }}</strong>
+                    <span class="hot-price">${{ hot.price }}</span>
+                </div>
+                <span class="hot-change-badge {% if hot.change >= 0 %}positive{% else %}negative{% endif %}">
+                    {% if hot.change >= 0 %}+{% endif %}{{ hot.change }}%
+                </span>
+            </div>
+            {% endfor %}
         </div>
-        <h3 style="font-size: 18px; font-weight: 600; margin: 0 0 8px 0; color: #111111;">Asset Target Locked</h3>
-        <p style="color: #666666; font-size: 14px; margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto;">
-            Connection established. Ready to launch the automated trade execution and analytical interface modules.
-        </p>
-        <button class="btn" style="background: var(--primary-purple, #6366f1); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 500; cursor: pointer;">
-            Open Order Book
-        </button>
-    </div>
+    </aside>
 
 </div>
 
 <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const historicalLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Today"];
+        
+        {% for chart in top_charts %}
+        (function() {
+            const canvasId = 'chart-{{ chart.ticker }}';
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return;
+
+            const spotPrice = parseFloat("{{ chart.current_price }}") || 0.0;
+            
+            // Fixed line wrap array formatting with proper commas
+            const mockData = [
+                spotPrice * 0.96, 
+                spotPrice * 0.98, 
+                spotPrice * 0.97, 
+                spotPrice * 1.01, 
+                spotPrice * 0.99, 
+                spotPrice
+            ];
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: historicalLabels,
+                    datasets: [{
+                        label: 'Price History ($)',
+                        data: mockData,
+                        borderColor: '#6366f1',
+                        borderWidth: 2,
+                        pointRadius: 2,
+                        backgroundColor: 'rgba(99, 102, 241, 0.03)',
+                        fill: true,
+                        tension: 0.2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                        y: { ticks: { font: { size: 10 } } }
+                    }
+                }
+            });
+        })();
+        {% endfor %}
+    });
+
+    // 2. Client Side Interaction Autocomplete Engine
     const searchInput = document.getElementById('stock-search-input');
     const resultsDropdown = document.getElementById('search-results-dropdown');
     const workspacePanel = document.getElementById('selected-stock-workspace');
     const targetTickerDisplay = document.getElementById('target-display-ticker');
     let debounceTimer;
+    const recentButtons = document.querySelectorAll('.recent-search-btn');
+
+    recentButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const ticker = btn.dataset.ticker;
+            if (!ticker) return;
+            searchInput.value = ticker;
+            targetTickerDisplay.textContent = ticker;
+            workspacePanel.style.display = 'block';
+            resultsDropdown.style.display = 'none';
+        });
+    });
 
     if (searchInput && resultsDropdown) {
         searchInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
             const query = searchInput.value.trim();
-
             if (query.length < 1) {
                 resultsDropdown.innerHTML = '';
                 resultsDropdown.style.display = 'none';
                 return;
             }
-
             debounceTimer = setTimeout(() => {
                 fetch(`/api/search?q=${query}`)
                     .then(res => res.json())
                     .then(results => {
                         resultsDropdown.innerHTML = '';
-                        
-                        if (results.length === 0) {
+                        if (!results || results.length === 0) {
                             resultsDropdown.innerHTML = '<div class="search-no-results">No stocks found</div>';
                             resultsDropdown.style.display = 'block';
                             return;
                         }
-
                         results.forEach(item => {
                             const option = document.createElement('div');
                             option.className = 'search-result-item';
-                            option.innerHTML = `
-                                <span class="search-result-ticker">${item.ticker}</span>
-                                <span class="search-result-name">${item.name}</span>
-                            `;
-
+                            option.innerHTML = `<span class="search-result-ticker">${item.ticker}</span><span class="search-result-name">${item.name}</span>`;
                             option.addEventListener('click', () => {
                                 searchInput.value = item.ticker;
                                 resultsDropdown.style.display = 'none';
-                                selectStockForTrading(item.ticker);
+                                targetTickerDisplay.textContent = item.ticker;
+                                workspacePanel.style.display = 'block';
                             });
-
                             resultsDropdown.appendChild(option);
                         });
                         resultsDropdown.style.display = 'block';
-                    })
-                    .catch(err => console.error("Search fetch failed:", err));
+                    }).catch(() => {
+                        resultsDropdown.innerHTML = '<div class="search-no-results">Search error</div>';
+                        resultsDropdown.style.display = 'block';
+                    });
             }, 250);
         });
 
-        document.addEventListener('click', function(e) {
-            if (e.target !== searchInput && e.target !== resultsDropdown) {
+        // Enter key should add to recent searches and open the workspace panel
+        searchInput.addEventListener('keydown', function(e) {
+            const q = searchInput.value.trim();
+            if (e.key === 'Enter' && q.length) {
+                e.preventDefault();
+                const ticker = q.toUpperCase();
+                targetTickerDisplay.textContent = ticker;
+                workspacePanel.style.display = 'block';
                 resultsDropdown.style.display = 'none';
             }
         });
-    }
 
-    function selectStockForTrading(ticker) {
-        console.log(`Stock target locked on isolated page: ${ticker}`);
-        if(workspacePanel && targetTickerDisplay) {
-            targetTickerDisplay.textContent = ticker;
-            workspacePanel.style.display = 'block';
-        }
+        document.addEventListener('click', e => {
+            if (!e.target.closest('.search-box-container')) resultsDropdown.style.display = 'none';
+        });
     }
 </script>
 {% endblock %}

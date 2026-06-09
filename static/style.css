@@ -282,3 +282,312 @@ body {
 /* Color Modifiers */
 .positive { color: var(--positive-green); }
 .negative { color: var(--negative-red); }
+
+/* =============================
+search page
+================================ */
+
+.search-workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 24px;
+    padding: 24px;
+}
+
+.main-workspace-lane {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Layer 1: Elements Split Row */
+.layer-one-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+}
+
+.dashboard-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+}
+
+.search-engine-card {
+    padding: 20px;
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111111;
+    margin: 0 0 4px 0;
+}
+
+.card-subtitle {
+    color: #666666;
+    font-size: 13px;
+    margin: 0 0 16px 0;
+}
+
+/* Search Engine Inputs & Auto-complete */
+.search-box-container {
+    position: relative;
+}
+
+.styled-search-input {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    box-shadow: 0 1px 4px rgba(16, 24, 40, 0.04);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.styled-search-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.08);
+}
+
+#search-results-dropdown {
+    position: absolute;
+    background: #ffffff;
+    border: 1px solid #e6e6e6;
+    border-radius: 8px;
+    width: calc(100% - 2px);
+    margin-top: 8px;
+    z-index: 40;
+    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.06);
+    display: none;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.search-result-item {
+    padding: 10px 12px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.search-result-item:hover {
+    background: #f7f7ff;
+}
+
+.search-no-results {
+    padding: 12px;
+    color: #888888;
+    font-size: 13px;
+    text-align: center;
+}
+
+.recent-searches {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.recent-btn {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 6px 10px;
+    cursor: pointer;
+}
+
+.recent-btn:hover {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+}
+
+/* Layer 1 Right: Assets Configuration */
+.assets-card {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card-title-alt {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111111;
+    margin: 0 0 12px 0;
+}
+
+.assets-metrics-group {
+    display: flex;
+    gap: 32px;
+    margin-bottom: 16px;
+}
+
+.metric-label {
+    font-size: 12px;
+    color: #666666;
+    display: block;
+}
+
+.metric-value-dark {
+    font-size: 20px;
+    color: #111111;
+}
+
+.metric-value-purple {
+    font-size: 20px;
+    color: #6366f1;
+}
+
+.mini-positions-list {
+    max-height: 100px;
+    overflow-y: auto;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 8px;
+}
+
+.position-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+.position-ticker {
+    font-weight: 600;
+}
+
+.position-qty {
+    font-weight: 400;
+    color: #666666;
+}
+
+.position-val {
+    color: #111111;
+}
+
+.empty-positions-text {
+    font-size: 13px;
+    color: #888888;
+    margin: 4px 0;
+}
+
+/* Layer 2: Core Matrix Analytics Charts */
+.section-heading {
+    font-size: 16px;
+    font-weight: 600;
+    color: #111111;
+    margin: 0 0 16px 0;
+}
+
+.charts-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.chart-card {
+    padding: 16px;
+}
+
+.chart-card-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    align-items: center;
+}
+
+.chart-title {
+    font-size: 15px;
+}
+
+.chart-value-label {
+    font-size: 13px;
+    color: #666666;
+}
+
+.chart-canvas-wrapper {
+    height: 160px;
+    position: relative;
+}
+
+.empty-charts-card {
+    grid-column: span 2;
+    padding: 40px;
+    text-align: center;
+    border-style: dashed;
+    color: #666666;
+}
+
+/* Right Column Sidebar: Hot Indicators */
+.hot-stocks-sidebar {
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e0e0e0;
+    height: fit-content;
+}
+
+.sidebar-heading {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111111;
+    margin: 0 0 4px 0;
+}
+
+.sidebar-subheading {
+    color: #666666;
+    font-size: 12px;
+    margin: 0 0 16px 0;
+}
+
+.hot-list-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.hot-stock-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.hot-stock-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.hot-ticker {
+    font-size: 14px;
+    color: #111111;
+}
+
+.hot-price {
+    font-size: 13px;
+    color: #555555;
+}
+
+.hot-change-badge {
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.hot-change-badge.positive {
+    background: #ecfdf5;
+    color: #10b981;
+}
+
+.hot-change-badge.negative {
+    background: #fef2f2;
+    color: #ef4444;
+}

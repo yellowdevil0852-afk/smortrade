@@ -1,0 +1,46 @@
+{% extends "layout.html" %}
+
+{% block title %}Market News Stream{% endblock %}
+
+{% block content %}
+<div class="news-workspace-container">
+    
+    <div class="news-header">
+        <h2 class="news-page-title">Algorithmic News Stream</h2>
+        <p class="news-page-subtitle">Real-time financial signals organized across an adaptive matrix workspace.</p>
+    </div>
+
+    <div class="news-puzzle-grid">
+        {% if news_list %}
+            {% for article in news_list %}
+            <a href="{{ article.url }}" target="_blank" class="news-card-link 
+                {% if loop.index == 1 %}puzzle-feature-2x2 style-backdrop{% elif loop.index == 2 %}puzzle-wide-2x1 style-split-wing{% elif loop.index == 5 %}puzzle-tall-1x2 style-split-horizon{% else %}puzzle-standard-1x1 style-split-horizon{% endif %}">
+                
+                <article class="news-card">
+                    
+                    <div class="news-image-frame">
+                        <img src="{{ article.image_url or '/static/images/news-placeholder.jpg' }}" alt="News Visual Summary" class="news-thumbnail">
+                    </div>
+                    
+                    <div class="news-content-block">
+                        <div class="news-meta-row">
+                            <span class="news-source-tag">{{ article.source }}</span>
+                            <span class="news-time-stamp">{{ article.time_elapsed }}</span>
+                        </div>
+                        <h3 class="news-headline">{{ article.title }}</h3>
+                        <p class="news-excerpt">{{ article.summary }}</p>
+                    </div>
+                    
+                </article>
+                
+            </a>
+            {% endfor %}
+        {% else %}
+            <div class="dashboard-card news-empty-state" style="grid-column: span 4;">
+                No market updates streaming currently.
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

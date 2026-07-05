@@ -11,7 +11,7 @@
             
             <div class="dashboard-card search-engine-card">
                 <h3 class="card-title">Market Search Engine</h3>
-                <p class="card-subtitle">Look up asset tickers across global exchanges.</p>
+                <p class="card-subtitle">Look up asset tickers across global exchanges and execute trades.</p>
                 
                 <div class="search-box-container">
                     <input type="text" id="stock-search-input" class="styled-search-input" placeholder="Type symbol... (e.g. AAPL, NVDA)" autocomplete="off" aria-label="Search stocks">
@@ -22,6 +22,37 @@
                         <button type="button" class="recent-btn recent-search-btn" data-ticker="NVDA">NVDA</button>
                         <button type="button" class="recent-btn recent-search-btn" data-ticker="TSLA">TSLA</button>
                     </div>
+                </div>
+
+                <div id="order-execution-panel" class="order-panel-container">
+                    <hr class="panel-divider">
+                    <h4 class="panel-title">Execute Position: <span id="target-ticker-display">Select an Asset</span></h4>
+                    
+                    <form action="/trade" method="POST" class="order-form-layout">
+                        <input type="hidden" name="ticker" id="hidden-ticker-input">
+                        
+                        <div class="form-row-split">
+                            <div class="form-group">
+                                <label class="input-field-label" for="action-select">Order Action</label>
+                                <select name="action" id="action-select" class="styled-form-select">
+                                    <option value="BUY">BUY (Go Long)</option>
+                                    <option value="SELL">SELL (Liquidate)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="input-field-label" for="shares-input">Quantity (Shares)</label>
+                                <input type="number" name="shares" id="shares-input" class="styled-form-input" min="1" placeholder="0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="input-field-label" for="justification-input">Trade Justification / Thesis</label>
+                            <textarea name="justification" id="justification-input" class="styled-form-textarea" placeholder="Explain your core analytical thesis for executing this position..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="submit-trade-btn">Route Order Ticket</button>
+                    </form>
                 </div>
             </div>
 
@@ -103,6 +134,7 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
+        // 1. Core Chart Canvas Rendering Loop via Chart.js
         const historicalLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Today"];
         
         {% for chart in top_charts %}
@@ -112,16 +144,7 @@
             if (!ctx) return;
 
             const spotPrice = parseFloat("{{ chart.current_price }}") || 0.0;
-            
-            // Fixed line wrap array formatting with proper commas
-            const mockData = [
-                spotPrice * 0.96, 
-                spotPrice * 0.98, 
-                spotPrice * 0.97, 
-                spotPrice * 1.01, 
-                spotPrice * 0.99, 
-                spotPrice
-            ];
+            const mockData = [spotPrice * 0.96, spotPrice * 0.98, spotPrice * 0.97, spotPrice * 1.01, spotPrice * 0.99, spotPrice];
 
             new Chart(ctx.getContext('2d'), {
                 type: 'line',
@@ -152,24 +175,10 @@
         {% endfor %}
     });
 
-    // 2. Client Side Interaction Autocomplete Engine
+    // 2. Client Side Interaction Autocomplete Dropdown Logic
     const searchInput = document.getElementById('stock-search-input');
     const resultsDropdown = document.getElementById('search-results-dropdown');
-    const workspacePanel = document.getElementById('selected-stock-workspace');
-    const targetTickerDisplay = document.getElementById('target-display-ticker');
     let debounceTimer;
-    const recentButtons = document.querySelectorAll('.recent-search-btn');
-
-    recentButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const ticker = btn.dataset.ticker;
-            if (!ticker) return;
-            searchInput.value = ticker;
-            targetTickerDisplay.textContent = ticker;
-            workspacePanel.style.display = 'block';
-            resultsDropdown.style.display = 'none';
-        });
-    });
 
     if (searchInput && resultsDropdown) {
         searchInput.addEventListener('input', function() {
@@ -185,7 +194,7 @@
                     .then(res => res.json())
                     .then(results => {
                         resultsDropdown.innerHTML = '';
-                        if (!results || results.length === 0) {
+                        if (results.length === 0) {
                             resultsDropdown.innerHTML = '<div class="search-no-results">No stocks found</div>';
                             resultsDropdown.style.display = 'block';
                             return;
@@ -194,37 +203,48 @@
                             const option = document.createElement('div');
                             option.className = 'search-result-item';
                             option.innerHTML = `<span class="search-result-ticker">${item.ticker}</span><span class="search-result-name">${item.name}</span>`;
+                            
                             option.addEventListener('click', () => {
                                 searchInput.value = item.ticker;
                                 resultsDropdown.style.display = 'none';
-                                targetTickerDisplay.textContent = item.ticker;
-                                workspacePanel.style.display = 'block';
+                                selectStockForTrading(item.ticker);
                             });
                             resultsDropdown.appendChild(option);
                         });
                         resultsDropdown.style.display = 'block';
-                    }).catch(() => {
-                        resultsDropdown.innerHTML = '<div class="search-no-results">Search error</div>';
-                        resultsDropdown.style.display = 'block';
                     });
             }, 250);
         });
+        
+        document.addEventListener('click', e => {
+            if (e.target !== searchInput && e.target !== resultsDropdown) resultsDropdown.style.display = 'none';
+        });
+    }
 
-        // Enter key should add to recent searches and open the workspace panel
-        searchInput.addEventListener('keydown', function(e) {
-            const q = searchInput.value.trim();
-            if (e.key === 'Enter' && q.length) {
-                e.preventDefault();
-                const ticker = q.toUpperCase();
-                targetTickerDisplay.textContent = ticker;
-                workspacePanel.style.display = 'block';
-                resultsDropdown.style.display = 'none';
+    // Connect recent search buttons to trigger searches
+    document.querySelectorAll('.recent-search-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const ticker = this.getAttribute('data-ticker');
+            if (searchInput) {
+                searchInput.value = ticker;
+                selectStockForTrading(ticker);
             }
         });
+    });
 
-        document.addEventListener('click', e => {
-            if (!e.target.closest('.search-box-container')) resultsDropdown.style.display = 'none';
-        });
+    // Updates form interfaces dynamically when an equity target is picked
+    function selectStockForTrading(ticker) {
+        const uppercaseTicker = ticker.toUpperCase();
+        
+        // Populate display labels and hidden elements
+        document.getElementById('target-ticker-display').innerText = uppercaseTicker;
+        document.getElementById('hidden-ticker-input').value = uppercaseTicker;
+        
+        // Reveal the panel cleanly
+        const executionPanel = document.getElementById('order-execution-panel');
+        executionPanel.classList.add('active');
+        
+        console.log(`Order window targeted: ${uppercaseTicker}`);
     }
 </script>
 {% endblock %}

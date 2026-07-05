@@ -14,18 +14,14 @@
         <nav class="sidebar-menu">
             <a href="/" class="menu-item {% if request.path == '/' %}active{% endif %}">Dashboard</a>
             <a href="/search" class="menu-item">Stock Search</a>
-            <a href="#" class="menu-item">Analytics</a>
-            <a href="#" class="menu-item">News</a>
-            <a href="#" class="menu-item">Settings</a>
+            <a href="/analytics" class="menu-item">Analytics</a>
+            <a href="/news" class="menu-item">News</a>
         </nav>
     </aside>
 
     <div class="main-container">
         
         <header class="topbar">
-            <div class="topbar-search">
-                <input type="text" placeholder="Global system search...">
-            </div>
             <div class="topbar-actions">
                 <span class="user-profile">User Profile</span>
                 <button class="btn-logout">Logout</button>

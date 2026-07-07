@@ -49,8 +49,8 @@
                         </div>
 
                         <div class="form-group">
-                            <label class="input-field-label" for="justification-input">Trade Justification / Thesis</label>
-                            <textarea name="justification" id="justification-input" class="styled-form-textarea" placeholder="Explain your core analytical thesis for executing this position..." required></textarea>
+                            <label class="input-field-label" for="total-cost-display">Estimated Total Cost</label>
+                            <input type="text" id="total-cost-display" class="styled-form-input" style="background-color: #f8fafc; font-weight: bold; color: #1e293b;" value="$0.00" readonly>
                         </div>
 
                         <button type="submit" class="submit-trade-btn">Route Order Ticket</button>
@@ -436,5 +436,49 @@
             document.onmousemove = null;
         }
     }
+
+    // Add a global variable to track the active stock's price
+    let currentSelectedPrice = 0.0;
+
+    function selectStockForTrading(ticker) {
+        const uppercaseTicker = ticker.toUpperCase();
+        document.getElementById('target-ticker-display').innerText = uppercaseTicker;
+        document.getElementById('hidden-ticker-input').value = uppercaseTicker;
+        const executionPanel = document.getElementById('order-execution-panel');
+        executionPanel.classList.add('active');
+
+        // Fetch the asset's spot price immediately to calculate totals live
+        fetch(`/api/stock/${uppercaseTicker}/data?period=1d`)
+            .then(res => res.json())
+            .then(data => {
+                if (data && data.current_price) {
+                    currentSelectedPrice = parseFloat(data.current_price);
+                    updateLiveTotalCost();
+                }
+            })
+            .catch(err => console.error("Error fetching price for total calculation:", err));
+    }
+
+    // Function to compute and format the total cost display
+    function updateLiveTotalCost() {
+        const sharesInput = document.getElementById('shares-input');
+        const totalDisplay = document.getElementById('total-cost-display');
+        
+        if (!sharesInput || !totalDisplay) return;
+        
+        const shares = parseInt(sharesInput.value) || 0;
+        const total = currentSelectedPrice * shares;
+        
+        totalDisplay.value = `$${total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+
+    // Bind the event listener to the quantity input once the page loads
+    document.addEventListener("DOMContentLoaded", function() {
+        const sharesInput = document.getElementById('shares-input');
+        if (sharesInput) {
+            sharesInput.addEventListener('input', updateLiveTotalCost);
+        }
+    });
+
 </script>
 {% endblock %}

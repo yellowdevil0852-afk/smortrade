@@ -264,10 +264,7 @@ def execute_trade():
         ticker = request.form.get("ticker", "").strip().upper()
         action = request.form.get("action", "").upper()
         shares_raw = request.form.get("shares")
-        justification = request.form.get("justification", "").strip()
 
-        if not ticker or not action or not shares_raw or not justification:
-            return "Invalid Order Ticket Parameters", 400
 
         # Force conversion to native Python int
         shares = int(shares_raw)
@@ -326,7 +323,7 @@ def execute_trade():
         conn.execute("""
             INSERT INTO history (user_id, ticker, action, shares, price, justification) 
             VALUES (1, ?, ?, ?, ?, ?)
-        """, (ticker, action, shares, price, justification))
+        """, (ticker, action, shares, price, f"Total: ${total_cost:,.2f}"))
 
         # Commit verified sanitized data rows
         conn.commit()

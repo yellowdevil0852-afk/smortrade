@@ -62,7 +62,8 @@ body {
     transition: all 0.2s ease;
 }
 
-.menu-item:hover, .menu-item.active {
+.menu-item:hover,
+.menu-item.active {
     background-color: var(--primary-light);
     color: var(--primary-purple);
 }
@@ -265,7 +266,7 @@ body {
 }
 
 .badge.buy {
-    background-color: rgba(16, 185, 129, 0.12) !important; 
+    background-color: rgba(16, 185, 129, 0.12) !important;
     color: var(--positive-green);
 }
 
@@ -275,8 +276,13 @@ body {
 }
 
 /* Color Modifiers */
-.positive { color: var(--positive-green); }
-.negative { color: var(--negative-red); }
+.positive {
+    color: var(--positive-green);
+}
+
+.negative {
+    color: var(--negative-red);
+}
 
 /* =============================
 search page
@@ -603,7 +609,8 @@ search page
 
 /* Activated via JavaScript on Selection */
 .order-panel-container.active {
-    max-height: 450px; /* Expands open smoothly */
+    max-height: 450px;
+    /* Expands open smoothly */
     opacity: 1;
     margin-top: 16px;
 }
@@ -853,15 +860,31 @@ search page
 .news-puzzle-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: 220px; /* Enhanced baseline track scale height */
+    grid-auto-rows: 220px;
+    /* Enhanced baseline track scale height */
     gap: 20px;
 }
 
 /* Size Modifier Dimensions Classes */
-.puzzle-feature-2x2 { grid-column: span 2; grid-row: span 2; }
-.puzzle-wide-2x1 { grid-column: span 2; grid-row: span 1; }
-.puzzle-tall-1x2 { grid-column: span 1; grid-row: span 2; }
-.puzzle-standard-1x1 { grid-column: span 1; grid-row: span 1; }
+.puzzle-feature-2x2 {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+.puzzle-wide-2x1 {
+    grid-column: span 2;
+    grid-row: span 1;
+}
+
+.puzzle-tall-1x2 {
+    grid-column: span 1;
+    grid-row: span 2;
+}
+
+.puzzle-standard-1x1 {
+    grid-column: span 1;
+    grid-row: span 1;
+}
 
 /* Base Anchor Wrapper Link Reset */
 .news-card-link {
@@ -950,11 +973,30 @@ search page
 }
 
 /* Text adjustments for dark background visibility */
-.style-backdrop .news-headline { color: #ffffff; font-size: 18px; font-weight: 600; }
-.style-backdrop .news-excerpt { color: #e2e8f0; line-clamp: 3; -webkit-line-clamp: 3; }
-.style-backdrop .news-time-stamp { color: #cbd5e1; }
-.style-backdrop .news-source-tag { color: #a5b4fc; font-weight: 600; }
-.style-backdrop:hover .news-headline { color: #a5b4fc; }
+.style-backdrop .news-headline {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.style-backdrop .news-excerpt {
+    color: #e2e8f0;
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+}
+
+.style-backdrop .news-time-stamp {
+    color: #cbd5e1;
+}
+
+.style-backdrop .news-source-tag {
+    color: #a5b4fc;
+    font-weight: 600;
+}
+
+.style-backdrop:hover .news-headline {
+    color: #a5b4fc;
+}
 
 
 /* --------------------------------------------------------------------------
@@ -979,9 +1021,19 @@ search page
     justify-content: flex-start;
 }
 
-.style-split-horizon .news-headline { font-size: 14px; color: #111111; }
-.style-split-horizon .news-excerpt { line-clamp: 2; -webkit-line-clamp: 2; }
-.style-split-horizon:hover .news-headline { color: #6366f1; }
+.style-split-horizon .news-headline {
+    font-size: 14px;
+    color: #111111;
+}
+
+.style-split-horizon .news-excerpt {
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+}
+
+.style-split-horizon:hover .news-headline {
+    color: #6366f1;
+}
 
 
 /* --------------------------------------------------------------------------
@@ -1002,16 +1054,215 @@ search page
     justify-content: center;
 }
 
-.style-split-wing .news-headline { font-size: 15px; color: #111111; }
-.style-split-wing .news-excerpt { line-clamp: 3; -webkit-line-clamp: 3; }
-.style-split-wing:hover .news-headline { color: #6366f1; }
+.style-split-wing .news-headline {
+    font-size: 15px;
+    color: #111111;
+}
+
+.style-split-wing .news-excerpt {
+    line-clamp: 3;
+    -webkit-line-clamp: 3;
+}
+
+.style-split-wing:hover .news-headline {
+    color: #6366f1;
+}
 
 
 /* Generic Base Semantic Overrides Setup */
-.news-meta-row { display: flex; gap: 10px; font-size: 11px; text-transform: uppercase; }
-.news-source-tag { color: #6366f1; }
-.news-time-stamp { color: #999999; }
-.news-headline { margin: 0; line-height: 1.4; transition: color 200ms ease; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
-.news-excerpt { margin: 0; font-size: 13px; color: #555555; line-height: 1.4; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
+.news-meta-row {
+    display: flex;
+    gap: 10px;
+    font-size: 11px;
+    text-transform: uppercase;
+}
 
-.news-empty-state { grid-column: span 4; padding: 40px; text-align: center; color: #888888; border-style: dashed; }
+.news-source-tag {
+    color: #6366f1;
+}
+
+.news-time-stamp {
+    color: #999999;
+}
+
+.news-headline {
+    margin: 0;
+    line-height: 1.4;
+    transition: color 200ms ease;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.news-excerpt {
+    margin: 0;
+    font-size: 13px;
+    color: #555555;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-box-orient:
+        vertical;
+    overflow:
+        hidden;
+}
+
+.news-empty-state {
+    grid-column: span 4;
+    padding: 40px;
+    text-align: center;
+    color: #888888;
+    border-style: dashed;
+}
+
+/* =========================================================================
+   POPUP WINDOW DESKTOP ENVIRONMENT (SMORTRADE SYSTEM UI)
+   ========================================================================= */
+
+/* Main window container layer tracking user screen real estate */
+.window-container-layer {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    width: 0; 
+    height: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* Draggable window frame */
+.crypto-popup-window {
+    position: absolute;
+    width: 480px; 
+    height: 420px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.01);
+    display: flex; 
+    flex-direction: column;
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+/* Titlebar handle for drag actions */
+.window-titlebar {
+    background: var(--bg-main);
+    padding: 12px 16px;
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    cursor: move; 
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.window-title { 
+    font-weight: 600; 
+    color: var(--text-dark);
+    font-size: 14px; 
+}
+
+/* Top right exit option button */
+.window-close-btn {
+    background: var(--negative-red);
+    color: #ffffff; 
+    border: none;
+    width: 20px; 
+    height: 20px; 
+    border-radius: 50%;
+    cursor: pointer; 
+    font-size: 10px; 
+    font-weight: 700;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    opacity: 0.85;
+    transition: opacity 0.2s ease;
+}
+
+.window-close-btn:hover {
+    opacity: 1;
+}
+
+/* Terminal deck canvas body */
+.window-body { 
+    padding: 16px; 
+    flex: 1; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 12px; 
+    background: var(--bg-card); 
+}
+
+/* Header layout container inside the popup window */
+.window-metric-strip { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+.window-price { 
+    font-size: 26px; 
+    font-weight: 700; 
+    color: var(--positive-green);
+}
+
+/* Timeframe button configuration row */
+.window-btn-group button {
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    padding: 6px 12px; 
+    font-size: 12px; 
+    border-radius: 6px; 
+    cursor: pointer; 
+    font-weight: 500; 
+    margin-left: 4px;
+    transition: all 0.2s ease;
+}
+
+.window-btn-group button:hover {
+    background: var(--primary-light);
+    color: var(--primary-purple);
+}
+
+.window-btn-group button.active { 
+    background: var(--primary-purple);
+    color: #ffffff; 
+    border-color: var(--primary-purple);
+}
+
+/* Dynamic chart wrapping block */
+.window-chart-canvas-box { 
+    position: relative; 
+    flex: 1; 
+    min-height: 160px; 
+    max-height: 180px; 
+}
+
+.window-chart-canvas-box canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* Grid parameters block styling */
+.window-grid-stats { 
+    display: grid; 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 8px; 
+    font-size: 12px; 
+    color: var(--text-muted); 
+}
+
+.window-grid-stats span { 
+    background: var(--bg-main);
+    padding: 8px 12px; 
+    border-radius: 6px; 
+    display: flex; 
+    justify-content: space-between; 
+    border: 1px solid var(--border-color);
+}
+
+.window-grid-stats strong { 
+    color: var(--text-dark); 
+}

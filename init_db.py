@@ -19,7 +19,8 @@ def initialize_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             username TEXT NOT NULL UNIQUE,
             hash TEXT NOT NULL,
-            cash NUMERIC NOT NULL DEFAULT 10000.00
+            cash NUMERIC NOT NULL DEFAULT 10000.00,
+            last_logout_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
     """)
 

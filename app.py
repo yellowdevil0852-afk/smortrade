@@ -211,6 +211,50 @@ def search_page():
         hot_stocks=hot_stocks
     )
 
+@app.route('/stock/<ticker>/data')
+def stock_dashboard(ticker):
+    # Pass ticker to template; data will be fetched client-side via JavaScript
+    return render_template('stock_detail.html', ticker=ticker.upper())
+
+@app.route('/api/stock/<ticker>/data')
+def get_stock_data(ticker):
+    period = request.args.get('period', '1d')
+    
+    # Map periods to valid yfinance intervals
+    interval_map = {
+        '1d': '1m',   # 1-minute data for today
+        '5d': '5m',   # 5-minute data for the week
+        '1mo': '30m', # 30-minute data for the month
+        '1y': '1d'    # Daily data for the year
+    }
+    interval = interval_map.get(period, '1d')
+    
+    try:
+        stock = yf.Ticker(ticker)
+        df = stock.history(period=period, interval=interval)
+        
+        if df.empty:
+            return jsonify({'error': 'No data found'}), 404
+            
+        # Format timestamps correctly for the chart
+        if period == '1d' or period == '5d':
+            labels = df.index.strftime('%H:%M').tolist()
+        else:
+            labels = df.index.strftime('%Y-%m-%d').tolist()
+            
+        numeric_data = {
+            'labels': labels,
+            'prices': [round(x, 2) for x in df['Close'].tolist()],
+            'volumes': df['Volume'].tolist(),
+            'current_price': round(stock.fast_info.get('lastPrice', df['Close'].iloc[-1]), 2),
+            'open': round(df['Open'].iloc[0], 2),
+            'high': round(df['High'].max(), 2),
+            'low': round(df['Low'].min(), 2)
+        }
+        return jsonify(numeric_data)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 @app.route("/trade", methods=["POST"])
 def execute_trade():
     """Processes transactions inside a resilient wrapper to eliminate file locks."""

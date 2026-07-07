@@ -3,6 +3,8 @@
 {% block title %}Stock Search & Analysis{% endblock %}
 
 {% block content %}
+<div id="popup-window-workspace" class="window-container-layer"></div>
+
 <div class="search-workspace-grid">
     
     <div class="main-workspace-lane">
@@ -75,7 +77,12 @@
                     {% if holdings %}
                         {% for item in holdings %}
                         <div class="position-row">
-                            <span class="position-ticker">{{ item.ticker }} <span class="position-qty">x{{ item.shares }}</span></span>
+                            <span class="position-ticker">
+                                <a href="javascript:void(0)" onclick="spawnStockTerminal('{{ item.ticker }}')" style="color: #6366f1; text-decoration: none; font-weight: bold; margin-right: 4px;">
+                                    {{ item.ticker }}
+                                </a>
+                                <span class="position-qty">x{{ item.shares }}</span>
+                            </span>
                             <span class="position-val">${{ "{:,.2f}".format(item.total_value) }}</span>
                         </div>
                         {% endfor %}
@@ -97,7 +104,7 @@
                             <strong class="chart-title">{{ chart.ticker }} Analytics</strong>
                             <span class="chart-value-label">Holding Val: ${{ "{:,.2f}".format(chart.total_value) }}</span>
                         </div>
-                        <div class="chart-canvas-wrapper">
+                        <div class="chart-canvas-wrapper" onclick="spawnStockTerminal('{{ chart.ticker }}')" style="cursor: pointer;" title="Launch Interactive Terminal View">
                             <canvas id="chart-{{ chart.ticker }}"></canvas>
                         </div>
                     </div>
@@ -119,7 +126,10 @@
             {% for hot in hot_stocks %}
             <div class="hot-stock-row">
                 <div class="hot-stock-info">
-                    <strong class="hot-ticker">{{ hot.ticker }}</strong>
+                    <!-- Added sidebar navigation clickability here -->
+                    <strong class="hot-ticker" onclick="spawnStockTerminal('{{ hot.ticker }}')" style="cursor: pointer; color: #6366f1;">
+                        {{ hot.ticker }}
+                    </strong>
                     <span class="hot-price">${{ hot.price }}</span>
                 </div>
                 <span class="hot-change-badge {% if hot.change >= 0 %}positive{% else %}negative{% endif %}">
@@ -133,6 +143,8 @@
 </div>
 
 <script>
+    let activeWindowZIndex = 10000;
+
     document.addEventListener("DOMContentLoaded", function() {
         // 1. Core Chart Canvas Rendering Loop via Chart.js
         const historicalLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Today"];
@@ -232,19 +244,197 @@
         });
     });
 
-    // Updates form interfaces dynamically when an equity target is picked
     function selectStockForTrading(ticker) {
         const uppercaseTicker = ticker.toUpperCase();
-        
-        // Populate display labels and hidden elements
         document.getElementById('target-ticker-display').innerText = uppercaseTicker;
         document.getElementById('hidden-ticker-input').value = uppercaseTicker;
-        
-        // Reveal the panel cleanly
         const executionPanel = document.getElementById('order-execution-panel');
         executionPanel.classList.add('active');
+    }
+
+    // =========================================================================
+    // 3. MULTI-WINDOW POPUP SYSTEM (DRAGGABLE & REAL-TIME STREAMING)
+    // =========================================================================
+    
+    // Global tracking lookup so instances can be updated cleanly across contexts
+    const activeTerminals = {};
+
+    function spawnStockTerminal(ticker) {
+        ticker = ticker.toUpperCase();
+        const workspace = document.getElementById('popup-window-workspace');
         
-        console.log(`Order window targeted: ${uppercaseTicker}`);
+        if (activeTerminals[ticker]) {
+            bringToFront(document.getElementById(`win-${ticker}`));
+            return;
+        }
+
+        const offset = (Object.keys(activeTerminals).length * 25) % 150;
+        const initialLeft = 100 + offset;
+        const initialTop = 150 + offset;
+
+        const win = document.createElement('div');
+        win.id = `win-${ticker}`;
+        win.className = 'crypto-popup-window';
+        win.style.left = `${initialLeft}px`;
+        win.style.top = `${initialTop}px`;
+        win.style.zIndex = ++activeWindowZIndex;
+        win.addEventListener('mousedown', () => bringToFront(win));
+
+        win.innerHTML = `
+            <div class="window-titlebar" id="drag-${ticker}">
+                <span class="window-title">📊 Terminal Deck: ${ticker}</span>
+                <button class="window-close-btn" onclick="closeTerminal('${ticker}')">✕</button>
+            </div>
+            <div class="window-body">
+                <div class="window-metric-strip">
+                    <div class="window-price" id="price-${ticker}">$--.--</div>
+                    <div class="window-btn-group">
+                        <button class="tf-btn-${ticker} active" onclick="updateTerminalFrame('${ticker}', '1d', this)">1D</button>
+                        <button class="tf-btn-${ticker}" onclick="updateTerminalFrame('${ticker}', '5d', this)">5D</button>
+                        <button class="tf-btn-${ticker}" onclick="updateTerminalFrame('${ticker}', '1mo', this)">1M</button>
+                        <button class="tf-btn-${ticker}" onclick="updateTerminalFrame('${ticker}', '1y', this)">1Y</button>
+                    </div>
+                </div>
+                <div class="window-chart-canvas-box">
+                    <canvas id="canvas-${ticker}"></canvas>
+                </div>
+                <div class="window-grid-stats">
+                    <span>Open: <strong id="open-${ticker}">$--.--</strong></span>
+                    <span>Vol: <strong id="vol-${ticker}">--</strong></span>
+                    <span>High: <strong id="high-${ticker}" style="color:#22c55e">$--.--</strong></span>
+                    <span>Low: <strong id="low-${ticker}" style="color:#ef4444">$--.--</strong></span>
+                </div>
+            </div>
+        `;
+
+        workspace.appendChild(win);
+        makeWindowDraggable(win, document.getElementById(`drag-${ticker}`));
+
+        // Set up the context profile
+        const ctx = document.getElementById(`canvas-${ticker}`).getContext('2d');
+        
+        // Save terminal parameters directly inside window reference container map
+        activeTerminals[ticker] = {
+            windowElement: win,
+            chartInstance: new Chart(ctx, {
+                type: 'line',
+                data: { 
+                    labels: [], 
+                    datasets: [{ 
+                        data: [], 
+                        borderColor: '#6366f1', 
+                        borderWidth: 2,
+                        tension: 0.1, 
+                        fill: false, 
+                        pointRadius: 0 
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } }, 
+                    borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary-purple'),
+                    scales: { 
+                        x: { grid: { color: '#e2e8f0' }, ticks: { display: false } }, 
+                        y: { grid: { color: '#e2e8f0' }, ticks: { color: '#6b7280', font: { size: 9 } } } 
+                    }
+                }
+            }),
+            pollingInterval: setInterval(() => {
+                const activeBtn = win.querySelector(`.window-btn-group button.active`);
+                const frame = activeBtn ? activeBtn.innerText.toLowerCase().replace('m','mo') : '1d';
+                fetchTerminalPayload(ticker, frame);
+            }, 12000)
+        };
+
+        // Fire rendering immediately
+        updateTerminalFrame(ticker, '1d', win.querySelector('.active'));
+    }
+
+    async function fetchTerminalPayload(ticker, period) {
+        const terminal = activeTerminals[ticker];
+        if (!terminal) return;
+
+        try {
+            const res = await fetch(`/api/stock/${ticker}/data?period=${period}`);
+            const data = await res.json();
+            if (data.error || !data.prices || data.prices.length === 0) return;
+
+            // Render stats
+            document.getElementById(`price-${ticker}`).innerText = `$${data.current_price}`;
+            document.getElementById(`open-${ticker}`).innerText = `$${data.open}`;
+            document.getElementById(`high-${ticker}`).innerText = `$${data.high}`;
+            document.getElementById(`low-${ticker}`).innerText = `$${data.low}`;
+            document.getElementById(`vol-${ticker}`).innerText = data.volume ? data.volume.toLocaleString() : '--';
+
+            // Strict numeric conversion mapping block
+            const numericPrices = data.prices.map(p => parseFloat(p));
+
+            // Sync arrays cleanly
+            terminal.chartInstance.data.labels = data.labels;
+            terminal.chartInstance.data.datasets[0].data = numericPrices;
+            
+            // Clear manual scale overrides to force bounds recalculation
+            if (terminal.chartInstance.options.scales && terminal.chartInstance.options.scales.y) {
+                terminal.chartInstance.options.scales.y.min = undefined;
+                terminal.chartInstance.options.scales.y.max = undefined;
+            }
+
+            terminal.chartInstance.update();
+        } catch (e) { 
+            console.error("Payload update process threw error: ", e); 
+        }
+    }
+
+    function updateTerminalFrame(ticker, period, btn) {
+        const win = document.getElementById(`win-${ticker}`);
+        if (!win) return;
+        win.querySelectorAll(`.tf-btn-${ticker}`).forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        fetchTerminalPayload(ticker, period);
+    }
+
+    function bringToFront(element) {
+        element.style.zIndex = ++activeWindowZIndex;
+    }
+
+    function closeTerminal(ticker) {
+        const terminal = activeTerminals[ticker];
+        if (terminal) {
+            clearInterval(terminal.pollingInterval);
+            terminal.chartInstance.destroy();
+            terminal.windowElement.remove();
+            delete activeTerminals[ticker];
+        }
+    }
+
+    function makeWindowDraggable(win, handle) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        handle.onmousedown = dragMouseDown;
+
+        function dragMouseDown(e) {
+            if (e.target.className === 'window-close-btn') return;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            win.style.top = (win.offsetTop - pos2) + "px";
+            win.style.left = (win.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
     }
 </script>
 {% endblock %}

@@ -132,6 +132,29 @@
 
     // Keep the 30-second loop going afterward
     setInterval(updateLivePrices, 30000);
+    
+    function handleOrderSubmission() {
+        const action = document.getElementById('order-action-input').value; // 'BUY' or 'SELL'
+        const ticker = document.getElementById('hidden-ticker-input').value; // e.g., 'AAPL'
+        const quantity = document.getElementById('order-qty-input').value;  // e.g., 50
+
+        // Example client portfolio object (usually passed down from your backend session context)
+        const userPortfolio = {
+            'AAPL': 10,
+            'TSLA': 5
+        };
+
+        // Run the error utility validator check
+        const isValid = ErrorHandler.validateOrder(action, ticker, quantity, userPortfolio);
+        
+        if (!isValid) {
+            return; // Halt execution cleanly if validations fail
+        }
+
+        // Process valid order submission to backend if true
+        console.log("Order passed local validation checks. Processing trade...");
+        // fetch('/api/trade', { method: 'POST', ... })
+    }
 </script>
 
 {% endblock %}

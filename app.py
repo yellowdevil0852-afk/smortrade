@@ -1,9 +1,10 @@
 import os
 import sqlite3
-from flask import Flask, render_template, url_for, jsonify, request, redirect
+from flask import Flask, render_template, url_for, jsonify, request, redirect, flash
 import yfinance as yf
 
 app = Flask(__name__)
+app.secret_key = "smortrade_local_dev_secret_key"
 
 def get_db_connection():
     """Establishes an active reference connection to the SQLite database."""
@@ -257,84 +258,31 @@ def get_stock_data(ticker):
     
 @app.route("/trade", methods=["POST"])
 def execute_trade():
-    """Processes transactions inside a resilient wrapper to eliminate file locks."""
-    conn = get_db_connection()
+    action = request.form.get("action")       
+    ticker = request.form.get("ticker").upper() 
     
     try:
-        ticker = request.form.get("ticker", "").strip().upper()
-        action = request.form.get("action", "").upper()
-        shares_raw = request.form.get("shares")
-
-
-        # Force conversion to native Python int
-        shares = int(shares_raw)
-        if shares <= 0: 
-            return "Quantity must be positive", 400
-
-        # Fetch current asset pricing parameters via yfinance
-        try:
-            stock = yf.Ticker(ticker)
-            info = stock.info
-            raw_price = info.get('regularMarketPrice') or info.get('currentPrice') or info.get('previousClose')
-            
-            # CRITICAL STEP 1: Cast the price to a standard Python float wrapper
-            price = float(raw_price)
-            if not price: raise ValueError
-        except Exception:
-            price = 150.00  # Fallback asset pricing placeholder
-
-        # CRITICAL STEP 2: Ensure total_cost is a pure Python float
-        total_cost = float(price * shares)
-
-        # Pull profile capital allocations
-        user = conn.execute("SELECT * FROM users WHERE id = 1").fetchone()
-        cash = float(user['cash'])
-
-        if action == "BUY":
-            if cash < total_cost:
-                return "Insolvent Capital: Deficient Cash Allocations for Execution", 400
-            
-            conn.execute("UPDATE users SET cash = cash - ? WHERE id = 1", (total_cost,))
-            
-            existing = conn.execute("SELECT * FROM holdings WHERE user_id = 1 AND ticker = ?", (ticker,)).fetchone()
-            if existing:
-                # CRITICAL STEP 3: Cast calculations to pure Python primitives
-                new_shares = int(existing['shares'] + shares)
-                new_avg = float(((existing['shares'] * existing['average_price']) + total_cost) / new_shares)
-                
-                conn.execute("UPDATE holdings SET shares = ?, average_price = ? WHERE id = ?", (new_shares, new_avg, existing['id']))
-            else:
-                conn.execute("INSERT INTO holdings (user_id, ticker, shares, average_price) VALUES (1, ?, ?, ?)", (ticker, shares, price))
-
-        elif action == "SELL":
-            existing = conn.execute("SELECT * FROM holdings WHERE user_id = 1 AND ticker = ?", (ticker,)).fetchone()
-            if not existing or int(existing['shares']) < shares:
-                return "Deficient Exposure: Position size insufficient for liquidation parameters", 400
-            
-            conn.execute("UPDATE users SET cash = cash + ? WHERE id = 1", (total_cost,))
-            
-            if int(existing['shares']) == shares:
-                conn.execute("DELETE FROM holdings WHERE id = ?", (existing['id'],))
-            else:
-                new_shares = int(existing['shares'] - shares)
-                conn.execute("UPDATE holdings SET shares = ? WHERE id = ?", (new_shares, existing['id']))
-
-        # Log permanent footprint into transaction table ledger with sanitized data types
-        conn.execute("""
-            INSERT INTO history (user_id, ticker, action, shares, price, justification) 
-            VALUES (1, ?, ?, ?, ?, ?)
-        """, (ticker, action, shares, price, f"Total: ${total_cost:,.2f}"))
-
-        # Commit verified sanitized data rows
-        conn.commit()
+        quantity = int(request.form.get("quantity"))
+    except (ValueError, TypeError):
+        flash("Invalid quantity entered.", "error")
         return redirect("/search")
 
-    except Exception as e:
-        print(f"⚠️ Internal Order Execution Failure: {e}")
-        return f"Transaction Processing Error: {e}", 500
+    if quantity <= 0:
+        flash("Quantity must be greater than 0.", "error")
+        return redirect("/search")
 
-    finally:
-        conn.close()
+    # ... rest of your validation logic ...
+    if action == "SELL":
+        row = db.execute("SELECT shares FROM portfolio WHERE user_id = ? AND ticker = ?", user_id, ticker)
+        
+        if not row:
+            flash(f"You do not own any shares of {ticker}.", "error")
+            return redirect("/search")
+            
+        shares_owned = row[0]["shares"]
+        if quantity > shares_owned:
+            flash(f"Insufficient shares. You only hold {shares_owned} shares.", "error")
+            return redirect("/search")
 
 @app.route("/analytics")
 def analytics_page():

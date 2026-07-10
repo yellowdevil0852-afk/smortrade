@@ -358,31 +358,28 @@
         try {
             const res = await fetch(`/api/stock/${ticker}/data?period=${period}`);
             const data = await res.json();
-            if (data.error || !data.prices || data.prices.length === 0) return;
-
-            // Render stats
-            document.getElementById(`price-${ticker}`).innerText = `$${data.current_price}`;
-            document.getElementById(`open-${ticker}`).innerText = `$${data.open}`;
-            document.getElementById(`high-${ticker}`).innerText = `$${data.high}`;
-            document.getElementById(`low-${ticker}`).innerText = `$${data.low}`;
-            document.getElementById(`vol-${ticker}`).innerText = data.volume ? data.volume.toLocaleString() : '--';
-
-            // Strict numeric conversion mapping block
-            const numericPrices = data.prices.map(p => parseFloat(p));
-
-            // Sync arrays cleanly
-            terminal.chartInstance.data.labels = data.labels;
-            terminal.chartInstance.data.datasets[0].data = numericPrices;
             
-            // Clear manual scale overrides to force bounds recalculation
-            if (terminal.chartInstance.options.scales && terminal.chartInstance.options.scales.y) {
-                terminal.chartInstance.options.scales.y.min = undefined;
-                terminal.chartInstance.options.scales.y.max = undefined;
+            // Use clean fallbacks if data is corrupt or missing
+            if (!data || data.error || !data.prices) {
+                ErrorHandler.notifyUser(`Could not sync data for ${ticker}`);
+                return;
             }
 
+            // Render stats via the clean string safety engine
+            document.getElementById(`price-${ticker}`).innerText = ErrorHandler.safeString(data.current_price ? `$${data.current_price}` : null);
+            document.getElementById(`open-${ticker}`).innerText = ErrorHandler.safeString(data.open ? `$${data.open}` : null);
+            document.getElementById(`high-${ticker}`).innerText = ErrorHandler.safeString(data.high ? `$${data.high}` : null);
+            document.getElementById(`low-${ticker}`).innerText = ErrorHandler.safeString(data.low ? `$${data.low}` : null);
+            document.getElementById(`vol-${ticker}`).innerText = data.volume ? data.volume.toLocaleString() : '--';
+
+            // Direct clean numeric array parser pass
+            terminal.chartInstance.data.labels = data.labels || [];
+            terminal.chartInstance.data.datasets[0].data = ErrorHandler.safeNumericArray(data.prices);
+            
             terminal.chartInstance.update();
         } catch (e) { 
-            console.error("Payload update process threw error: ", e); 
+            // Single line clean handling log
+            ErrorHandler.log(`Fetch Payload Terminal: ${ticker}`, e); 
         }
     }
 

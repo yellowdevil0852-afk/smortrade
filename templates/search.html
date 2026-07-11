@@ -78,7 +78,7 @@
                         {% for item in holdings %}
                         <div class="position-row">
                             <span class="position-ticker">
-                                <a href="javascript:void(0)" onclick="spawnStockTerminal('{{ item.ticker }}')" style="color: #6366f1; text-decoration: none; font-weight: bold; margin-right: 4px;">
+                                <a href="javascript:void(0)" onclick="selectStockForTrading('{{ item.ticker }}')" style="color: #6366f1; text-decoration: none; font-weight: bold; margin-right: 4px;">
                                     {{ item.ticker }}
                                 </a>
                                 <span class="position-qty">x{{ item.shares }}</span>
@@ -104,7 +104,7 @@
                             <strong class="chart-title">{{ chart.ticker }} Analytics</strong>
                             <span class="chart-value-label">Holding Val: ${{ "{:,.2f}".format(chart.total_value) }}</span>
                         </div>
-                        <div class="chart-canvas-wrapper" onclick="spawnStockTerminal('{{ chart.ticker }}')" style="cursor: pointer;" title="Launch Interactive Terminal View">
+                        <div class="chart-canvas-wrapper" onclick="selectStockForTrading('{{ chart.ticker }}')" style="cursor: pointer;" title="Launch Interactive Terminal View">
                             <canvas id="chart-{{ chart.ticker }}"></canvas>
                         </div>
                     </div>
@@ -122,12 +122,12 @@
         <h3 class="sidebar-heading">🔥 Hot Indicators</h3>
         <p class="sidebar-subheading">High volume algorithmic movers today.</p>
         
-        <div class="hot-list-wrapper">
+        <div id="hot-list-wrapper" class="hot-list-wrapper" data-empty="No live volume data available.">
             {% for hot in hot_stocks %}
             <div class="hot-stock-row">
                 <div class="hot-stock-info">
                     <!-- Added sidebar navigation clickability here -->
-                    <strong class="hot-ticker" onclick="spawnStockTerminal('{{ hot.ticker }}')" style="cursor: pointer; color: #6366f1;">
+                    <strong class="hot-ticker" onclick="selectStockForTrading('{{ hot.ticker }}')" style="cursor: pointer; color: #6366f1;">
                         {{ hot.ticker }}
                     </strong>
                     <span class="hot-price">${{ hot.price }}</span>
@@ -135,19 +135,152 @@
                 <span class="hot-change-badge {% if hot.change >= 0 %}positive{% else %}negative{% endif %}">
                     {% if hot.change >= 0 %}+{% endif %}{{ hot.change }}%
                 </span>
+                <span class="hot-volume" style="font-size: 12px; color: #64748b; margin-left: 8px;">Vol {{ "{:,.0f}".format(hot.volume or 0) }}</span>
             </div>
             {% endfor %}
+        </div>
+
+        <div class="dashboard-card targeted-watchlist-card">
+            <h3 class="sidebar-heading">Targeted Watchlist</h3>
+            <p class="sidebar-subheading">Star up to 6 stocks from any terminal window.</p>
+            <div id="targeted-watchlist-grid" class="watchlist-grid sidebar-watchlist-grid">
+                {% for stock in targeted_stocks %}
+                <div class="watchlist-row" data-ticker="{{ stock.ticker }}">
+                    <span class="stock-ticker">{{ stock.ticker }}</span>
+                    <span class="stock-price live-price">${{ "{:,.2f}".format(stock.price) }}</span>
+                    <span class="stock-change live-change {% if stock.change >= 0 %}positive{% else %}negative{% endif %}">
+                        {% if stock.change >= 0 %}+{% endif %}{{ stock.change }}%
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            <p id="targeted-watchlist-note" class="watchlist-empty-note" {% if not targeted_watchlist_message %}style="display:none;"{% endif %}>{{ targeted_watchlist_message or 'add more targeted stock through stock terminal window' }}</p>
         </div>
     </aside>
 
 </div>
 
+<div id="targeted-watchlist-data" data-tickers='{{ targeted_watchlist_tickers|tojson }}' hidden></div>
+
 <script>
     let activeWindowZIndex = 10000;
+    const MAX_TARGETED_STOCKS = 6;
+    const targetedWatchlistSeed = document.getElementById('targeted-watchlist-data');
+    const targetedWatchlistTickers = new Set(JSON.parse(targetedWatchlistSeed?.dataset.tickers || '[]'));
+
+    function notifyUser(message) {
+        if (window.ErrorHandler && typeof ErrorHandler.notifyUser === 'function') {
+            ErrorHandler.notifyUser(message);
+            return;
+        }
+
+        window.alert(message);
+    }
+
+    function renderTargetedWatchlist(items, noteText) {
+        const grid = document.getElementById('targeted-watchlist-grid');
+        const note = document.getElementById('targeted-watchlist-note');
+
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        (Array.isArray(items) ? items : []).forEach(stock => {
+            const row = document.createElement('div');
+            row.className = 'watchlist-row';
+            row.dataset.ticker = stock.ticker;
+
+            const ticker = document.createElement('span');
+            ticker.className = 'stock-ticker';
+            ticker.textContent = stock.ticker;
+
+            const price = document.createElement('span');
+            price.className = 'stock-price live-price';
+            price.textContent = `$${Number(stock.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const change = document.createElement('span');
+            const changeValue = Number(stock.change || 0);
+            change.className = `stock-change live-change ${changeValue >= 0 ? 'positive' : 'negative'}`;
+            change.textContent = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
+
+            row.appendChild(ticker);
+            row.appendChild(price);
+            row.appendChild(change);
+            grid.appendChild(row);
+        });
+
+        if (note) {
+            if (noteText) {
+                note.textContent = noteText;
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        }
+
+        targetedWatchlistTickers.clear();
+        (Array.isArray(items) ? items : []).forEach(stock => targetedWatchlistTickers.add(stock.ticker));
+        syncTerminalWatchlistStars();
+    }
+
+    function syncTerminalWatchlistStars() {
+        Object.keys(activeTerminals).forEach(ticker => {
+            const button = document.getElementById(`watchlist-star-${ticker}`);
+            if (!button) return;
+
+            const isTargeted = targetedWatchlistTickers.has(ticker);
+            button.classList.toggle('active', isTargeted);
+            button.textContent = isTargeted ? '★' : '☆';
+            button.title = isTargeted ? 'Remove from targeted watchlist' : 'Add to targeted watchlist';
+            button.setAttribute('aria-pressed', String(isTargeted));
+        });
+    }
+
+    async function refreshTargetedWatchlist() {
+        try {
+            const response = await fetch('/api/watchlist', { cache: 'no-store' });
+            const payload = await response.json();
+            renderTargetedWatchlist(payload.items || payload || [], payload.message || '');
+        } catch (error) {
+            console.error('Targeted watchlist refresh failed:', error);
+        }
+    }
+
+    async function toggleTargetedStock(ticker) {
+        const normalizedTicker = ticker.toUpperCase();
+
+        try {
+            const response = await fetch('/api/watchlist/toggle', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ticker: normalizedTicker })
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok) {
+                notifyUser(payload.error || 'Unable to update targeted watchlist.');
+                return;
+            }
+
+            renderTargetedWatchlist(payload.items || [], payload.message || '');
+            syncTerminalWatchlistStars();
+            if (payload.error) {
+                notifyUser(payload.error);
+            }
+        } catch (error) {
+            console.error('Targeted watchlist toggle failed:', error);
+            notifyUser('Unable to update targeted watchlist.');
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", function() {
         // 1. Core Chart Canvas Rendering Loop via Chart.js
         const historicalLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Today"];
+            refreshHotIndicators();
+            setInterval(refreshHotIndicators, 30000);
+            refreshTargetedWatchlist();
+            setInterval(refreshTargetedWatchlist, 30000);
         
         {% for chart in top_charts %}
         (function() {
@@ -190,7 +323,79 @@
     // 2. Client Side Interaction Autocomplete Dropdown Logic
     const searchInput = document.getElementById('stock-search-input');
     const resultsDropdown = document.getElementById('search-results-dropdown');
+    const hotListWrapper = document.getElementById('hot-list-wrapper');
     let debounceTimer;
+
+    function formatVolume(volume) {
+        const parsedVolume = Number(volume) || 0;
+        return parsedVolume.toLocaleString('en-US');
+    }
+
+    function renderHotIndicators(items) {
+        if (!hotListWrapper) return;
+
+        hotListWrapper.innerHTML = '';
+
+        if (!Array.isArray(items) || items.length === 0) {
+            const emptyState = document.createElement('p');
+            emptyState.className = 'empty-positions-text';
+            emptyState.textContent = hotListWrapper.dataset.empty || 'No live volume data available.';
+            hotListWrapper.appendChild(emptyState);
+            return;
+        }
+
+        items.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'hot-stock-row';
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', () => selectStockForTrading(item.ticker));
+
+            const info = document.createElement('div');
+            info.className = 'hot-stock-info';
+
+            const ticker = document.createElement('strong');
+            ticker.className = 'hot-ticker';
+            ticker.textContent = item.ticker;
+            ticker.style.cursor = 'pointer';
+            ticker.style.color = '#6366f1';
+            ticker.addEventListener('click', () => selectStockForTrading(item.ticker));
+
+            const price = document.createElement('span');
+            price.className = 'hot-price';
+            price.textContent = `$${Number(item.price || 0).toFixed(2)}`;
+
+            info.appendChild(ticker);
+            info.appendChild(price);
+
+            const change = document.createElement('span');
+            change.className = `hot-change-badge ${Number(item.change || 0) >= 0 ? 'positive' : 'negative'}`;
+            change.textContent = `${Number(item.change || 0) >= 0 ? '+' : ''}${Number(item.change || 0).toFixed(2)}%`;
+
+            const volume = document.createElement('span');
+            volume.className = 'hot-volume';
+            volume.style.fontSize = '12px';
+            volume.style.color = '#64748b';
+            volume.style.marginLeft = '8px';
+            volume.textContent = `Vol ${formatVolume(item.volume)}`;
+
+            row.appendChild(info);
+            row.appendChild(change);
+            row.appendChild(volume);
+            hotListWrapper.appendChild(row);
+        });
+    }
+
+    async function refreshHotIndicators() {
+        if (!hotListWrapper) return;
+
+        try {
+            const response = await fetch('/api/hot-indicators', { cache: 'no-store' });
+            const items = await response.json();
+            renderHotIndicators(items);
+        } catch (error) {
+            console.error('Hot indicators refresh failed:', error);
+        }
+    }
 
     if (searchInput && resultsDropdown) {
         searchInput.addEventListener('input', function() {
@@ -202,7 +407,7 @@
                 return;
             }
             debounceTimer = setTimeout(() => {
-                fetch(`/api/search?q=${query}`)
+                fetch(`/api/search?q=${encodeURIComponent(query)}`)
                     .then(res => res.json())
                     .then(results => {
                         resultsDropdown.innerHTML = '';
@@ -214,7 +419,18 @@
                         results.forEach(item => {
                             const option = document.createElement('div');
                             option.className = 'search-result-item';
-                            option.innerHTML = `<span class="search-result-ticker">${item.ticker}</span><span class="search-result-name">${item.name}</span>`;
+                            option.style.cursor = 'pointer';
+
+                            const tickerLabel = document.createElement('span');
+                            tickerLabel.className = 'search-result-ticker';
+                            tickerLabel.textContent = item.ticker;
+
+                            const nameLabel = document.createElement('span');
+                            nameLabel.className = 'search-result-name';
+                            nameLabel.textContent = item.name;
+
+                            option.appendChild(tickerLabel);
+                            option.appendChild(nameLabel);
                             
                             option.addEventListener('click', () => {
                                 searchInput.value = item.ticker;
@@ -283,7 +499,10 @@
         win.innerHTML = `
             <div class="window-titlebar" id="drag-${ticker}">
                 <span class="window-title">📊 Terminal Deck: ${ticker}</span>
-                <button class="window-close-btn" onclick="closeTerminal('${ticker}')">✕</button>
+                <div class="window-title-actions">
+                    <button class="window-watchlist-btn" id="watchlist-star-${ticker}" type="button" onclick="toggleTargetedStock('${ticker}')" aria-label="Toggle targeted watchlist">☆</button>
+                    <button class="window-close-btn" onclick="closeTerminal('${ticker}')">✕</button>
+                </div>
             </div>
             <div class="window-body">
                 <div class="window-metric-strip">
@@ -346,6 +565,8 @@
                 fetchTerminalPayload(ticker, frame);
             }, 12000)
         };
+
+        syncTerminalWatchlistStars();
 
         // Fire rendering immediately
         updateTerminalFrame(ticker, '1d', win.querySelector('.active'));
@@ -455,6 +676,9 @@
         document.getElementById('hidden-ticker-input').value = uppercaseTicker;
         const executionPanel = document.getElementById('order-execution-panel');
         executionPanel.classList.add('active');
+
+        spawnStockTerminal(uppercaseTicker);
+        syncTerminalWatchlistStars();
 
         // Fetch the asset's spot price immediately to calculate totals live
         fetch(`/api/stock/${uppercaseTicker}/data?period=1d`)

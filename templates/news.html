@@ -13,13 +13,12 @@
     <div class="news-puzzle-grid">
         {% if news_list %}
             {% for article in news_list %}
-            <a href="{{ article.url }}" target="_blank" class="news-card-link 
-                {% if loop.index == 1 %}puzzle-feature-2x2 style-backdrop{% elif loop.index == 2 %}puzzle-wide-2x1 style-split-wing{% elif loop.index == 5 %}puzzle-tall-1x2 style-split-horizon{% else %}puzzle-standard-1x1 style-split-horizon{% endif %}">
+            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="news-card-link {% if loop.index0 % 6 == 0 %}puzzle-feature-2x2 style-backdrop{% elif loop.index0 % 6 == 1 %}puzzle-wide-2x1 style-split-wing{% elif loop.index0 % 6 == 2 %}puzzle-standard-1x1 style-split-horizon{% elif loop.index0 % 6 == 3 %}puzzle-tall-1x2 style-split-horizon{% elif loop.index0 % 6 == 4 %}puzzle-standard-1x1 style-split-wing{% else %}puzzle-standard-1x1 style-split-horizon{% endif %}" aria-label="Open news article in a new tab: {{ article.title }}">
                 
                 <article class="news-card">
                     
                     <div class="news-image-frame">
-                        <img src="{{ article.image_url or '/static/images/news-placeholder.jpg' }}" alt="News Visual Summary" class="news-thumbnail">
+                        <img src="{{ article.image_url or '/static/images/news-placeholder.jpg' }}" alt="News Visual Summary for {{ article.title }}" class="news-thumbnail" loading="lazy">
                     </div>
                     
                     <div class="news-content-block">
@@ -28,7 +27,7 @@
                             <span class="news-time-stamp">{{ article.time_elapsed }}</span>
                         </div>
                         <h3 class="news-headline">{{ article.title }}</h3>
-                        <p class="news-excerpt">{{ article.summary }}</p>
+                        <p class="news-excerpt">{{ article.summary or article.source }}</p>
                     </div>
                     
                 </article>

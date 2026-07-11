@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}Profile Dashboard{% endblock %}
+
+{% block content %}
+<div class="profile-page">
+    <section class="profile-panel profile-core-panel">
+        <div class="profile-panel-header">
+            <div>
+                <p class="profile-eyebrow">Core Credentials</p>
+                <h1 class="profile-title">Account Profile</h1>
+            </div>
+            <span class="profile-status-chip">Sandbox Ready</span>
+        </div>
+
+        <div class="profile-core-grid">
+            <div class="profile-identity-block">
+                <div class="profile-meta-row">
+                    <span class="profile-meta-label">Username</span>
+                    <strong class="profile-meta-value">{{ username }}</strong>
+                </div>
+                <div class="profile-meta-row">
+                    <span class="profile-meta-label">Account Join Date</span>
+                    <strong class="profile-meta-value">{{ account_join_date }}</strong>
+                </div>
+
+                <form method="POST" action="{{ url_for('profile_page') }}" class="profile-reset-form">
+                    <input type="hidden" name="action" value="reset_balance">
+                    <button type="submit" class="profile-reset-btn">Reset Balance to $10,000</button>
+                </form>
+            </div>
+
+            <div class="profile-cash-card">
+                <span class="profile-cash-label">Current Available Cash</span>
+                <strong class="profile-cash-value">${{ "{:,.2f}".format(cash_balance) }}</strong>
+                <p class="profile-cash-note">Balance refill is immediate and logs back into the simulation ledger.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="profile-panel profile-analytics-panel">
+        <div class="profile-panel-header">
+            <div>
+                <p class="profile-eyebrow">Performance Analytics</p>
+                <h2 class="profile-section-title">Account Health Metrics</h2>
+            </div>
+        </div>
+
+        <div class="profile-metric-grid">
+            <div class="profile-metric-card">
+                <span class="profile-metric-label">Account Win/Loss Ratio</span>
+                <strong class="profile-metric-value">{{ win_loss_ratio }}</strong>
+                <span class="profile-metric-caption">Closed trade outcomes tracked from the transaction ledger.</span>
+            </div>
+
+            <div class="profile-metric-card">
+                <span class="profile-metric-label">Total Simulated Transaction Fees Paid</span>
+                <strong class="profile-metric-value">${{ "{:,.2f}".format(total_fees_paid) }}</strong>
+                <span class="profile-metric-caption">Commission drag estimated from each recorded execution.</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="profile-panel profile-automation-panel">
+        <div class="profile-panel-header">
+            <div>
+                <p class="profile-eyebrow">Automatic Trading Logic</p>
+                <h2 class="profile-section-title">Price Trigger Rules</h2>
+            </div>
+            <span class="profile-status-chip">Live rule monitor</span>
+        </div>
+
+        <div class="profile-automation-grid">
+            <form method="POST" action="{{ url_for('profile_page') }}" class="profile-config-form profile-rule-form">
+                <input type="hidden" name="action" value="add_auto_trade">
+
+                <div class="profile-config-grid">
+                    <label class="profile-field">
+                        <span class="profile-field-label">Ticker</span>
+                        <input name="ticker" class="profile-input" type="text" placeholder="AAPL" maxlength="12" required>
+                    </label>
+
+                    <label class="profile-field">
+                        <span class="profile-field-label">Action</span>
+                        <select name="trade_action" class="profile-select">
+                            <option value="BUY">BUY</option>
+                            <option value="SELL">SELL</option>
+                        </select>
+                    </label>
+
+                    <label class="profile-field">
+                        <span class="profile-field-label">Shares</span>
+                        <input name="shares" class="profile-input" type="number" min="1" step="1" placeholder="10" required>
+                    </label>
+
+                    <label class="profile-field">
+                        <span class="profile-field-label">Trigger Price</span>
+                        <input name="target_price" class="profile-input" type="number" min="0.01" step="0.01" placeholder="321.00" required>
+                    </label>
+                </div>
+
+                <button type="submit" class="profile-reset-btn profile-auto-submit">Save Automatic Trade</button>
+                <p class="profile-footnote profile-auto-note">Buy rules must have enough available cash to cover the trigger cost. If a later manual trade makes the account short of funds, the rule is paused automatically.</p>
+            </form>
+
+            <div class="profile-automation-list">
+                {% if auto_trade_rules %}
+                    {% for rule in auto_trade_rules %}
+                    <article class="automation-rule-card">
+                        <div class="automation-rule-topline">
+                            <div>
+                                <strong class="automation-rule-title">{{ rule.action }} {{ rule.ticker }}</strong>
+                                <span class="automation-rule-subtitle">{{ rule.shares }} shares at ${{ "{:,.2f}".format(rule.target_price) }}</span>
+                            </div>
+                            <span class="automation-rule-status {{ rule.status }}">{{ rule.status|capitalize }}</span>
+                        </div>
+
+                        <div class="automation-rule-metrics">
+                            <span>Live Price: <strong>${{ "{:,.2f}".format(rule.current_price) if rule.current_price is not none else '--.--' }}</strong></span>
+                            <span>Trigger: <strong>{{ rule.trigger_state }}</strong></span>
+                            <span>Cash Check: <strong>{{ 'Ready' if rule.has_sufficient_cash else 'Paused risk' }}</strong></span>
+                        </div>
+
+                        {% if rule.paused_reason %}
+                        <p class="automation-rule-reason">{{ rule.paused_reason }}</p>
+                        {% endif %}
+
+                        <form method="POST" action="{{ url_for('profile_page') }}" class="automation-rule-actions">
+                            <input type="hidden" name="action" value="remove_auto_trade">
+                            <input type="hidden" name="rule_id" value="{{ rule.id }}">
+                            <button type="submit" class="automation-remove-btn">Remove Rule</button>
+                        </form>
+                    </article>
+                    {% endfor %}
+                {% else %}
+                    <div class="automation-empty-state">
+                        No automatic trades are configured yet. Add a rule to start monitoring trigger prices.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

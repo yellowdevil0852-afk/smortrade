@@ -9,6 +9,7 @@ def initialize_database():
 
     # 1. Clear out historic experimental layouts if they exist
     cursor.execute("DROP TABLE IF EXISTS history")
+    cursor.execute("DROP TABLE IF EXISTS transactions")
     cursor.execute("DROP TABLE IF EXISTS holdings")
     cursor.execute("DROP TABLE IF EXISTS users")
 
@@ -38,23 +39,54 @@ def initialize_database():
         )
     """)
 
-    # 4. Build the Ledger History Table
-    # Stores permanent transaction footprints alongside your thesis strings
+    # 4. Build the Targeted Watchlist Table
+    # Tracks up to six user-selected symbols for the terminal star action
     cursor.execute("""
-        CREATE TABLE history (
+        CREATE TABLE watchlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            ticker TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id),
+            UNIQUE(user_id, ticker)
+        )
+    """)
+
+    # 5. Build the Automatic Trading Rules Table
+    # Stores price-triggered orders that the profile page manages
+    cursor.execute("""
+        CREATE TABLE auto_trades (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL,
             ticker TEXT NOT NULL,
             action TEXT NOT NULL,
             shares INTEGER NOT NULL,
+            target_price REAL NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            status TEXT NOT NULL DEFAULT 'active',
+            paused_reason TEXT,
+            last_executed_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+    """)
+
+    # 6. Build the Transaction Ledger Table
+    # Stores the real trade history rendered by the dashboard ledger
+    cursor.execute("""
+        CREATE TABLE transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            ticker TEXT NOT NULL,
+            type TEXT NOT NULL,
+            shares INTEGER NOT NULL,
             price NUMERIC NOT NULL,
-            justification TEXT NOT NULL,
             timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY(user_id) REFERENCES users(id)
         )
     """)
 
-    # 5. Inject a Default Baseline Seed User for Development Profile Routing
+    # 7. Inject a Default Baseline Seed User for Development Profile Routing
     # This matches the user_id = 1 context used across your search and trade views
     cursor.execute("""
         INSERT INTO users (username, hash, cash) 

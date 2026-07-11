@@ -24,7 +24,7 @@
 <section class="split-layer">
     <div class="card target-watchlist">
         <h2>Targeted Watchlist</h2>
-        <div class="watchlist-grid">
+        <div id="targeted-watchlist-grid" class="watchlist-grid">
             {% for stock in targeted_stocks %}
             <div class="watchlist-row" data-ticker="{{ stock.ticker }}">
                 <span class="stock-ticker">{{ stock.ticker }}</span>
@@ -35,16 +35,18 @@
             </div>
             {% endfor %}
         </div>
+        <p id="targeted-watchlist-note" class="watchlist-empty-note" {% if not targeted_watchlist_message %}style="display:none;"{% endif %}>{{ targeted_watchlist_message or 'add more targeted stock' }}</p>
     </div>
 
     <div class="card news-feed">
         <h2>Market News Terminal</h2>
         <div class="news-list">
             {% for article in market_news %}
-            <div class="news-item">
+            <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="news-item news-item-link" aria-label="Open news article in a new tab: {{ article.title }}">
                 <span class="news-source">{{ article.source }}</span>
                 <p class="news-title">{{ article.title }}</p>
-            </div>
+                <p class="news-summary">{{ article.time_elapsed }}{% if article.summary %} · {{ article.summary }}{% endif %}</p>
+            </a>
             {% endfor %}
         </div>
     </div>
@@ -52,7 +54,7 @@
 
 <section class="activity-layer">
     <div class="card ledger-card">
-        <h2>Recent Automated Activity Ledger</h2>
+        <h2>Recent Transaction Ledger</h2>
         <table class="data-table">
             <thead>
                 <tr>
@@ -65,6 +67,7 @@
                 </tr>
             </thead>
             <tbody>
+                {% if recent_transactions %}
                 {% for tx in recent_transactions %}
                 <tr>
                     <td>{{ tx.timestamp }}</td>
@@ -79,12 +82,59 @@
                     <td>${{ "{:,.2f}".format(tx.total) }}</td>
                 </tr>
                 {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 18px 12px; color: #64748b;">No transactions recorded yet.</td>
+                </tr>
+                {% endif %}
             </tbody>
         </table>
     </div>
 </section>
 
 <script>
+    function renderTargetedWatchlist(items, noteText) {
+        const grid = document.getElementById('targeted-watchlist-grid');
+        const note = document.getElementById('targeted-watchlist-note');
+
+        if (!grid) return;
+
+        grid.innerHTML = '';
+
+        (Array.isArray(items) ? items : []).forEach(stock => {
+            const row = document.createElement('div');
+            row.className = 'watchlist-row';
+            row.dataset.ticker = stock.ticker;
+
+            const ticker = document.createElement('span');
+            ticker.className = 'stock-ticker';
+            ticker.textContent = stock.ticker;
+
+            const price = document.createElement('span');
+            price.className = 'stock-price live-price';
+            price.textContent = `$${Number(stock.price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const change = document.createElement('span');
+            const changeValue = Number(stock.change || 0);
+            change.className = `stock-change live-change ${changeValue >= 0 ? 'positive' : 'negative'}`;
+            change.textContent = `${changeValue >= 0 ? '+' : ''}${changeValue.toFixed(2)}%`;
+
+            row.appendChild(ticker);
+            row.appendChild(price);
+            row.appendChild(change);
+            grid.appendChild(row);
+        });
+
+        if (note) {
+            if (noteText) {
+                note.textContent = noteText;
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        }
+    }
+
     function updateLivePrices() {
         console.log("Attempting to fetch live prices..."); // Let's see if the function even starts
         
@@ -104,24 +154,8 @@
                     return;
                 }
 
-                data.forEach(stock => {
-                    const row = document.querySelector(`.watchlist-row[data-ticker="${stock.ticker}"]`);
-                    if (row) {
-                        const priceEl = row.querySelector('.live-price');
-                        const changeEl = row.querySelector('.live-change');
-
-                        priceEl.textContent = stock.price;
-                        changeEl.textContent = stock.change;
-                        
-                        if (stock.is_positive) {
-                            changeEl.classList.remove('negative');
-                            changeEl.classList.add('positive');
-                        } else {
-                            changeEl.classList.remove('positive');
-                            changeEl.classList.add('negative');
-                        }
-                    }
-                });
+                const items = Array.isArray(data) ? data : (data.items || []);
+                renderTargetedWatchlist(items, data.message || '');
                 console.log("Watchlist auto-updated smoothly.");
             })
             .catch(err => console.error("Fetch framework broken:", err));

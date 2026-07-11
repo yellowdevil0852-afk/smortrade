@@ -63,7 +63,7 @@
         to { opacity: 1; transform: translateX(0); }
     }
     </style>
-    <script src="/static/js/error-utils.js"></script>
+    <script src="{{ url_for('static', filename='error-utils.js') }}"></script>
     <script>
     // Auto-dismiss server-side flashes identically to client-side notifications
     document.addEventListener("DOMContentLoaded", function() {

@@ -361,25 +361,37 @@
             
             // Use clean fallbacks if data is corrupt or missing
             if (!data || data.error || !data.prices) {
-                ErrorHandler.notifyUser(`Could not sync data for ${ticker}`);
+                if (window.ErrorHandler) {
+                    ErrorHandler.notifyUser(`Could not sync data for ${ticker}`);
+                }
                 return;
             }
 
+            const formatPrice = (value) => value !== undefined && value !== null ? `$${value}` : '$--.--';
+            const safeArray = Array.isArray(data.prices) ? data.prices.map(point => {
+                const parsed = parseFloat(point);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }) : [];
+
             // Render stats via the clean string safety engine
-            document.getElementById(`price-${ticker}`).innerText = ErrorHandler.safeString(data.current_price ? `$${data.current_price}` : null);
-            document.getElementById(`open-${ticker}`).innerText = ErrorHandler.safeString(data.open ? `$${data.open}` : null);
-            document.getElementById(`high-${ticker}`).innerText = ErrorHandler.safeString(data.high ? `$${data.high}` : null);
-            document.getElementById(`low-${ticker}`).innerText = ErrorHandler.safeString(data.low ? `$${data.low}` : null);
-            document.getElementById(`vol-${ticker}`).innerText = data.volume ? data.volume.toLocaleString() : '--';
+            document.getElementById(`price-${ticker}`).innerText = formatPrice(data.current_price);
+            document.getElementById(`open-${ticker}`).innerText = formatPrice(data.open);
+            document.getElementById(`high-${ticker}`).innerText = formatPrice(data.high);
+            document.getElementById(`low-${ticker}`).innerText = formatPrice(data.low);
+            document.getElementById(`vol-${ticker}`).innerText = data.volumes && data.volumes.length ? data.volumes[data.volumes.length - 1].toLocaleString() : '--';
 
             // Direct clean numeric array parser pass
             terminal.chartInstance.data.labels = data.labels || [];
-            terminal.chartInstance.data.datasets[0].data = ErrorHandler.safeNumericArray(data.prices);
+            terminal.chartInstance.data.datasets[0].data = safeArray;
             
             terminal.chartInstance.update();
         } catch (e) { 
             // Single line clean handling log
-            ErrorHandler.log(`Fetch Payload Terminal: ${ticker}`, e); 
+            if (window.ErrorHandler) {
+                ErrorHandler.log(`Fetch Payload Terminal: ${ticker}`, e);
+            } else {
+                console.error(`Fetch Payload Terminal: ${ticker}`, e);
+            }
         }
     }
 

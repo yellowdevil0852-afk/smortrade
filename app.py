@@ -75,17 +75,17 @@ def format_profile_timestamp(value):
         return text.split(" ")[0]
 
 
-def build_profile_metrics(conn, user_row):
-    """Build the simulated analytics shown on the profile page."""
+def _compute_transaction_stats(conn):
+    """Walk the transaction ledger and derive win/loss and P&L statistics."""
     transaction_rows = conn.execute(
         "SELECT ticker, type, shares, price, timestamp FROM transactions WHERE user_id = ? ORDER BY timestamp ASC, id ASC",
         (DEFAULT_USER_ID,)
     ).fetchall()
 
-    total_fees_paid = sum(0.99 + (0.005 * float(row["shares"] or 0)) for row in transaction_rows)
-
     wins = 0
     losses = 0
+    gross_profit = 0.0
+    gross_loss = 0.0
     position_state = {}
 
     for row in transaction_rows:
@@ -101,17 +101,42 @@ def build_profile_metrics(conn, user_row):
             state["cost"] += shares * price
         elif "SELL" in trade_type:
             average_cost = state["cost"] / state["shares"] if state["shares"] else price
+            sold_shares = min(shares, state["shares"]) if state["shares"] else shares
+            pnl = (price - average_cost) * sold_shares
+
             if price > average_cost:
                 wins += 1
+                gross_profit += pnl
             else:
                 losses += 1
+                gross_loss += abs(pnl)
 
             if state["shares"] > 0:
-                sold_shares = min(shares, state["shares"])
                 state["shares"] -= sold_shares
                 state["cost"] = max(0.0, state["cost"] - (average_cost * sold_shares))
 
         position_state[ticker] = state
+
+    return {
+        "wins": wins,
+        "losses": losses,
+        "gross_profit": gross_profit,
+        "gross_loss": gross_loss,
+        "total_executions": len(transaction_rows),
+    }
+
+
+def build_profile_metrics(conn, user_row):
+    """Build the simulated analytics shown on the profile page."""
+    transaction_rows = conn.execute(
+        "SELECT ticker, type, shares, price, timestamp FROM transactions WHERE user_id = ? ORDER BY timestamp ASC, id ASC",
+        (DEFAULT_USER_ID,)
+    ).fetchall()
+
+    total_fees_paid = sum(0.99 + (0.005 * float(row["shares"] or 0)) for row in transaction_rows)
+    stats = _compute_transaction_stats(conn)
+    wins = stats["wins"]
+    losses = stats["losses"]
 
     if len(transaction_rows) == 0:
         win_loss_ratio = "0:0"
@@ -123,6 +148,33 @@ def build_profile_metrics(conn, user_row):
     return {
         "win_loss_ratio": win_loss_ratio,
         "total_fees_paid": round(total_fees_paid, 2),
+    }
+
+
+def build_analytics_kpis(conn):
+    """Derive live performance KPIs from the transaction ledger."""
+    stats = _compute_transaction_stats(conn)
+    wins = stats["wins"]
+    losses = stats["losses"]
+    closed_trades = wins + losses
+
+    if closed_trades == 0:
+        win_rate = 0.0
+    else:
+        win_rate = round((wins / closed_trades) * 100, 1)
+
+    gross_profit = stats["gross_profit"]
+    gross_loss = stats["gross_loss"]
+    if gross_loss == 0:
+        profit_factor = "N/A" if gross_profit == 0 else "∞"
+    else:
+        profit_factor = round(gross_profit / gross_loss, 2)
+
+    return {
+        "win_rate": win_rate,
+        "profit_factor": profit_factor,
+        "total_trades": stats["total_executions"],
+        "net_profit": round(gross_profit - gross_loss, 2),
     }
 
 
@@ -187,7 +239,7 @@ def fetch_auto_trade_rules(conn):
         elif action == "BUY":
             trigger_state = "Ready" if current_price >= target_price else "Waiting"
         else:
-            trigger_state = "Ready" if current_price <= target_price else "Waiting"
+            trigger_state = "Ready" if current_price >= target_price else "Waiting"
 
         rules.append({
             "id": row["id"],
@@ -330,7 +382,7 @@ def process_auto_trade_rules(conn):
         except Exception:
             continue
 
-        trigger_ready = (live_price >= target_price) if action == "BUY" else (live_price <= target_price)
+        trigger_ready = live_price >= target_price
         if action == "BUY":
             current_cash = conn.execute(
                 "SELECT cash FROM users WHERE id = ?",
@@ -1124,14 +1176,7 @@ def analytics_page():
         round(net_portfolio_value, 2)
     ]
 
-    # 4. Generate core KPI Performance score card values
-    # These mock values represent aggregate statistics from historical orders
-    performance_kpis = {
-        "win_rate": 62.5,
-        "profit_factor": 1.74,
-        "total_trades": len(holdings_list) + 4, # Active plus example historic
-        "net_profit": round(stock_value_total * 0.05, 2)
-    }
+    performance_kpis = build_analytics_kpis(conn)
 
     conn.close()
 

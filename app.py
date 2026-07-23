@@ -2,7 +2,7 @@ import json
 import os
 import sqlite3
 from datetime import datetime, timezone
-from flask import Flask, render_template, url_for, jsonify, request, redirect, flash
+from flask import Flask, render_template, url_for, jsonify, request, redirect, flash, session
 import yfinance as yf
 from urllib.parse import quote_plus
 from urllib.request import Request, urlopen
